@@ -2279,6 +2279,7 @@ async updateEmployeeETAs(driverLat, driverLng, employees) {
         }
 
         function createUrlFromClientDetails(data){
+            console.log("base url: ", data.trackurl);
             BASE_URL = data.trackurl;
             URL_CabValidation = BASE_URL + "MyCabValidation";
             URL_ProfilePicture = data.photourl;
