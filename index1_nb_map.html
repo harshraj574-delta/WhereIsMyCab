@@ -1,0 +1,3783 @@
+<!DOCTYPE html>
+
+<head>
+    <title>ETMS DRIVE- View Current Location</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="ScreenOrientation" content="autoRotate:disabled">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"
+        integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <link href="https://maps-gl.nextbillion.io/maps/v2/api/css" rel="stylesheet" />
+
+
+
+    <style>
+        html,
+        body,
+
+        /* #map {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        } */
+
+        #map {
+            position: absolute;
+            width: 100%;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        :root {
+            --white: #fff;
+            --primary: #4a36ec;
+            --success: #0baa60;
+            --warning: #fdba0f;
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        /* .no-scroll {
+            overflow: hidden !important;
+        } */
+
+        /* button {
+            text-decoration: none;
+        } */
+
+        body {
+            font-family: PlusJakartaSans;
+            font-stretch: normal;
+            font-style: normal;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        td p {
+            margin: 0;
+        }
+
+        .call_action {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px;
+            padding: 16px 30px;
+            width: calc(100% - 40px);
+            position: fixed;
+            bottom: 0px;
+            border-radius: 16px;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            background-color: rgba(41, 41, 41, 0.6);
+
+        }
+
+        .icon-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .icon-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            display: none;
+            /* initially hide the dot */
+        }
+
+        .red-dot-visible::after {
+            display: block;
+            /* show the dot when this class is present */
+        }
+
+        .call_btn button {
+            background-color: transparent;
+            border: 0;
+        }
+
+        .call_action small {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .call_action a {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .call_action div {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .call_action button {
+            background-color: transparent;
+            border: 0;
+            color: var(--white);
+        }
+
+        .driverBx {
+            width: calc(100% - 40px);
+            position: absolute;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 0 0 rgba(31, 22, 95, 0.2), 0 2px 4px 0 rgba(31, 22, 95, 0.2),
+                0 7px 7px 0 rgba(31, 22, 95, 0.17), 0 16px 9px 0 rgba(31, 22, 95, 0.1),
+                0 28px 11px 0 rgba(31, 22, 95, 0.03), 0 44px 12px 0 rgba(31, 22, 95, 0);
+            background-color: #4a36ec;
+            border: solid 1px #4a36ec;
+            border-radius: 24px;
+            border-bottom-left-radius: 0;
+            margin: 20px;
+        }
+
+        .DetalBx {
+            display: flex;
+            justify-content: start;
+            align-items: start;
+        }
+
+        .personDetalBx {
+            padding: 10px 0 0 16px;
+        }
+
+        .personDetalBx h2 {
+            font-size: 21px;
+            font-weight: 600;
+            color: var(--white);
+            margin: 10px 0;
+            width: auto;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .personDetalBx h3 {
+            font-size: 13px;
+            font-weight: normal;
+            color: var(--white);
+        }
+
+        .personDetalBx td {
+            font-size: 13px;
+            font-weight: normal;
+            color: var(--white);
+        }
+
+        .personDetalBx .otp {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--white);
+            background: var(--success);
+            margin-top: 10px;
+        }
+
+        .driver_badge {
+            background: #ebe7ff;
+            color: var(--primary);
+        }
+
+        .guard_badge {
+            background: var(--warning);
+            color: var(--primary);
+        }
+
+
+        .carousel-indicators {
+            margin-bottom: 4px;
+            border-radius: 8px;
+        }
+
+        .carousel-indicators [data-bs-target] {
+            width: 8px;
+            height: 8px;
+            border: 0;
+            border-radius: 8px;
+        }
+
+        .logo_icon {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            z-index: 1024;
+        }
+
+        /* .imgBx {
+            position: relative;
+        }
+
+        .imgBx .reaching {
+            position: absolute;
+            bottom: -52px;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            background: #1c1d20;
+            width: 100%;
+            height: 52px;
+            padding-left: 18px;
+            display: flex;
+            align-items: center;
+        }
+
+        .imgBx .reaching h4 {
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .imgBx .reaching h4 small {
+            font-size: 11px;
+            font-weight: 500;
+            color: #fff;
+            display: block;
+            margin-bottom: 6px;
+        } */
+
+
+        .reaching {
+            position: absolute;
+            bottom: -52px;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            width: 110px;
+            height: 52px;
+            padding-left: 18px;
+            display: flex;
+            align-items: center;
+            left: -1px;
+        }
+
+        .reaching h4 {
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .reaching h4 small {
+            font-size: 11px;
+            font-weight: 500;
+            color: #fff;
+            display: block;
+            margin-bottom: 4px;
+            /*6px*/
+        }
+
+
+
+        /* .chat {
+            background-color: var(--warning);
+            border-top-left-radius: 22px;
+            border-bottom-left-radius: 22px;
+            position: absolute;
+            bottom: 200px;
+            right: 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1c1d20;
+            padding: 12px 14px;
+        } */
+
+
+        .modal-backdrop.show {
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            background-color: rgba(28, 29, 32, 0.2);
+            opacity: 1;
+        }
+
+        body.disable-modal-styles .modal-backdrop.show {
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+            background-color: transparent;
+            opacity: 0;
+        }
+
+        .modal-content {
+            border-radius: 24px;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-body p {
+            font-size: 16px;
+            font-weight: 600;
+            color: #545557;
+        }
+
+        .modal-body h5 {
+            font-size: 21px;
+            font-weight: 500;
+            color: #1c1d20;
+            margin-bottom: 18px;
+        }
+
+        .modal-body h6 {
+            font-size: 16px;
+            font-weight: 500;
+            color: #545557;
+            margin-bottom: 36px;
+            line-height: 26px;
+        }
+
+
+        .list li {
+            font-size: 16px;
+            font-weight: 500;
+            color: #545557;
+            padding: 10px 0;
+        }
+
+        .btn-cst {
+            height: 58px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .offWhite {
+            color: #f9f9f9;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-evenly;
+        }
+
+        .bg-dark {
+            background: #0baa60 !important;
+        }
+
+        .bg-success {
+            background: var(--success) !important;
+        }
+
+
+        /* Styles for badges */
+        .badge {
+            display: inline-block;
+            padding: 0.35em 0.65em;
+            font-size: 0.75em;
+            font-weight: 700;
+            line-height: 1;
+            color: #4a36ec;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.25rem;
+        }
+
+        .badge:empty {
+            display: none;
+        }
+
+        /* Styles for badges within buttons */
+        .btn .badge {
+            position: relative;
+            top: -1px;
+        }
+
+        /* Styles for alerts */
+        .alert {
+            position: relative;
+            padding: 1rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+        }
+
+        /* p {
+            margin: 0;
+        } */
+
+        /* The Modal (background) */
+        .modal-driverImage {
+            display: none;
+            position: relative;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            padding: 20px;
+
+        }
+
+        .btn-close1 {
+            background-color: transparent;
+            border: 0;
+            font-size: 20px;
+            cursor: pointer;
+            position: absolute;
+            right: 2px;
+            top: 2px;
+            border-radius: 50%;
+            transition: all 0.2s ease-in;
+        }
+
+        .btn-close1:hover {
+            opacity: 0.7;
+            background-color: lightgray;
+        }
+
+        /* The Close Button */
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+
+
+        .sidenav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1024;
+            top: 0;
+            right: 0;
+            background-color: #fff;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+
+
+        .sidenav a {
+            border-width: 1px 0 1px 0;
+            border-color: rgb(0, 0, 0);
+            border-style: solid;
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 15px;
+            font-family: Poppins;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .sidenav a:hover {
+            color: #000000;
+        }
+
+        .sidenav .closebtn {
+            border-radius: 50%;
+            padding: 0.5em;
+            margin-top: 2%;
+            width: 15px;
+            height: 15px;
+            border: 1px solid #1b1b1c;
+            color: #f01c1c;
+            font-weight: bold;
+            position: absolute;
+            top: 0;
+            text-align: center;
+            left: 0px;
+            font-size: 12px;
+            margin-right: 50px;
+            margin-left: 2%;
+        }
+
+        .sidenav .closebtn:hover {
+            border: 1px solid blue;
+            background-color: yellow;
+            color: #ffffff;
+        }
+
+        .sidenav .closebtn::before {
+            content: " ";
+            position: absolute;
+            display: block;
+            width: 2px;
+            left: 12px;
+            top: 5px;
+            bottom: 5px;
+            transform: rotate(45deg);
+        }
+
+        @media screen and (max-height: 450px) {
+            .sidenav {
+                padding-top: 15px;
+            }
+
+            .sidenav a {
+                font-size: 18px;
+            }
+        }
+
+
+
+        center {
+            font-size: 150px;
+            animation: fadeIn 15s;
+        }
+
+        @keyframes center {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+
+        /* New Css */
+
+        .offcanvas-custom {
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            border-bottom-right-radius: 20px;
+            border-bottom-left-radius: 20px;
+            border: 0;
+            height: 95%;
+            /* width: calc(100% - 40px); */
+            display: flex;
+            align-self: center;
+            justify-content: center;
+            /* margin-left: 20px;
+            margin-bottom: 40px; */
+        }
+
+        /* body.offcanvas-open {
+            overflow: hidden;
+            position: fixed;
+        } */
+
+        .offcanvas-open .offcanvas {
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .offcanvas-header-custom {
+            /* justify-content: flex-start; */
+            background-color: #f0f0f0;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+
+        .offcanvas-header-custom h5 {
+            font-size: 18px;
+            font-weight: bold;
+            text-overflow: ellipsis;
+            width: 90%;
+        }
+
+        .offcanvas-header-custom h5 small {
+            display: block;
+            font-size: 11px;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .offcanvas-footer {
+            position: relative;
+            padding: 8px 16px 8px 16px;
+            background: #f0e7de;
+        }
+
+        .offcanvas-footer input {
+            height: 50px;
+            width: 100%;
+            border: 1px solid #dddddd;
+            border-radius: 25px;
+            padding: 0 80px 0 16px;
+        }
+
+        .offcanvas-footer input::placeholder {
+            font-size: 13px;
+        }
+
+        .offcanvas-footer img {
+            position: absolute;
+            z-index: 9;
+            top: 50%;
+            right: 12px;
+            transform: translateY(24%);
+        }
+
+        .chats {
+            padding: 12px 16px;
+            margin-bottom: 6px;
+            border-radius: 20px;
+            width: fit-content;
+            word-wrap: break-word;
+        }
+
+        .chats.recevier {
+            background-color: #ffffff;
+            float: left;
+            clear: both;
+        }
+
+        .chats.sender {
+            background-color: #e7ffdb;
+            float: right;
+            clear: both;
+        }
+
+
+
+        .offcanvas-header-custom .btn-left {
+            background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5z'/%3E%3C/svg%3E");
+            box-sizing: content-box;
+            width: 1.4em;
+            height: 1.4em;
+            padding: 0.25em 0.25em;
+            color: #000;
+            border: 0;
+            border-radius: 0.25rem;
+            opacity: 0.8;
+        }
+
+        .offcanvas-header-custom .btn-left {
+            padding: 0.5rem 0.5rem;
+            margin-top: -0.5rem;
+            margin-right: -0.5rem;
+            margin-bottom: -0.5rem;
+        }
+
+        .scroller {
+            background: #f0e7de;
+            overflow: auto;
+            height: 100px;
+            display: flex;
+            flex-direction: column-reverse;
+            -webkit-overflow-scrolling: touch;
+
+        }
+
+        html {
+            position: static;
+            overflow-y: hidden;
+            height: 100%;
+            max-height: 100%;
+        }
+
+        body {
+            overflow: hidden;
+            height: 100%;
+            max-height: 100%;
+        }
+
+        ::-webkit-scrollbar {
+            height: 5px;
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            border-radius: 0;
+            box-shadow: inset 0 0 1px rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0;
+        }
+
+        ::-webkit-scrollbar-thumb:window-inactive {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .scroller .scroller-content .item {
+            height: 20px;
+            transform: translateZ(0);
+            transform: translate3d(0, 0, 0);
+            z-index: 1030;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            overflow: scroll;
+            /* fixes a bug in Safari iOS where the scroller doesn't update */
+        }
+
+
+        .offcanvasTapBtn {
+            background-color: transparent !important;
+            border: 0 !important;
+        }
+
+        .tap_action {
+            margin: 0px;
+            padding: 16px 30px;
+            width: 100%;
+            position: fixed;
+            bottom: 0px;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            /* -webkit-backdrop-filter: blur(20px); */
+            /*backdrop-filter: blur(20px);*/
+            background-color: rgba(41, 41, 41, 0.6);
+        }
+
+        .tap_action small {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .tap_action a {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--white);
+            text-align: center;
+            margin-bottom: 26px;
+        }
+
+        .tap_action div {
+            width: 32%;
+            display: block !important;
+            float: left;
+        }
+
+        .tap_action button {
+            background-color: transparent;
+            border: 0;
+            width: 100%;
+        }
+
+        /* chat */
+        /* Reset default margin and padding */
+        /* body,
+        h1,
+        h2,
+        h3,
+        p,
+        ul,
+        li {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            
+        } */
+
+        /* Set a consistent box-sizing */
+        * {
+            box-sizing: border-box;
+        }
+
+        /* Basic styling for the chat container */
+        body,
+        html {
+            height: 100%;
+
+        }
+
+        #chat-container {
+            width: 100%;
+            margin: 0 auto;
+            flex-direction: column-reverse;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+
+        }
+
+        /* Styling for chat messages */
+        /* .chat-messages {
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: flex-end;
+            max-height: 120vh;
+            overflow-y: auto;
+            padding: 0 20px;
+            border-bottom: 1px solid #ccc;
+        } */
+
+        /* Styling for individual chat messages */
+        .message-bubble {
+            color: #000;
+            border-radius: 10px;
+            padding: 10px 15px;
+            max-width: 50%;
+            word-wrap: break-word;
+            margin-top: 8px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* #message-input {
+            width: 82%;
+            padding: 10px;
+
+        } */
+
+        /* #send-button {
+            width: 60px;
+            height: 60px;
+            padding: 0;
+            background-color: #FFBD21; 
+            color: white;
+            border: none;
+            border-radius: 70%;
+            margin-top: 1px;
+            cursor: pointer;
+            float: right;
+
+        } */
+
+        .send-button img {
+            width: 40%;
+            height: 40%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #loader {
+            animation: animate 1.5s linear infinite;
+            clip: rect(0, 80px, 80px, 40px);
+            height: 80px;
+            width: 80px;
+            position: absolute;
+            left: calc(50% - 40px);
+            top: calc(50% - 40px);
+        }
+
+        @keyframes animate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(220deg);
+            }
+        }
+
+        #loader:after {
+            animation: animate2 1.5s ease-in-out infinite;
+            clip: rect(0, 80px, 80px, 40px);
+            content: '';
+            border-radius: 50%;
+            height: 80px;
+            width: 80px;
+            position: absolute;
+        }
+
+        @keyframes animate2 {
+            0% {
+                box-shadow: inset #d12222 0 0 0 17px;
+                transform: rotate(-140deg);
+            }
+
+            50% {
+                box-shadow: inset #dc5b5b 0 0 0 2px;
+            }
+
+            100% {
+                box-shadow: inset #712929 0 0 0 17px;
+                transform: rotate(140deg);
+            }
+        }
+
+        /* Common styles for sent and received messages */
+        .message {
+            margin-top: 5px;
+            max-width: fit-content;
+            border-radius: 10px;
+            padding: 10px 15px;
+            max-width: 50%;
+            word-wrap: break-word;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .sent {
+            background-color: #DCF8C6;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .received {
+            background-color: #F5F5F5;
+            align-self: flex-start;
+            color: #000;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .call_action {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px;
+            padding: 16px 30px;
+            width: calc(100% - 40px);
+            position: fixed;
+            bottom: 0px;
+            border-radius: 16px;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            background-color: rgba(41, 41, 41, 0.6);
+
+        }
+
+        /* chat */
+
+        /*scrollable text messages*/
+        .scrollable-tabs-container {
+            background: #f0e7de;
+            max-width: 700px;
+            margin: 5px auto;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .scrollable-tabs-container svg {
+            width: 24px;
+            height: 24px;
+            padding: 8px;
+            cursor: pointer;
+            color: #fff;
+            border-radius: 50%;
+            pointer-events: auto;
+        }
+
+        .scrollable-tabs-container ul {
+            display: flex;
+            gap: 16px;
+            padding: 12px 12px;
+            margin: 0;
+            list-style: none;
+            overflow-x: scroll;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            scroll-behavior: smooth;
+        }
+
+        .scrollable-tabs-container ul.dragging a {
+            pointer-events: none;
+        }
+
+        .scrollable-tabs-container ul.dragging {
+            scroll-behavior: auto;
+        }
+
+        .scrollable-tabs-container ul::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollable-tabs-container a {
+            color: #fff;
+            text-decoration: none;
+            background: #8DB5F7;
+            padding: 4px 24px;
+            display: inline-block;
+            border-radius: 20px;
+            user-select: none;
+            width: 300px;
+        }
+
+        .scrollable-tabs-container a.active {
+            background: #fff;
+            color: #000;
+        }
+
+        .scrollable-tabs-container .right-arrow,
+        .scrollable-tabs-container .left-arrow {
+            position: absolute;
+            height: 100%;
+            width: 100px;
+            top: 0;
+            display: none;
+            align-items: center;
+            padding: 0 10px;
+            pointer-events: none;
+        }
+
+        .scrollable-tabs-container .right-arrow.active,
+        .scrollable-tabs-container .left-arrow.active {
+            display: flex;
+        }
+
+        .scrollable-tabs-container .right-arrow {
+            right: 0;
+            justify-content: flex-end;
+        }
+
+        .scrollable-tabs-container .left-arrow {}
+
+        .scrollable-tabs-container svg:hover {
+            background: #fff;
+        }
+
+        /*scrollable text messages*/
+
+        .modal-body.share-body {
+            margin: 0px;
+            padding: 16px 30px;
+            width: 100%;
+            position: fixed;
+            bottom: 0px;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(0px);
+        }
+
+        .modal-body.share-body small {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .modal-body.share-body a {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--white);
+            text-align: center;
+            margin-bottom: 26px;
+        }
+
+        .modal-body.share-body div {
+            width: 32%;
+            display: block !important;
+            float: left;
+        }
+
+        .modal-body.share-body button {
+            background-color: transparent;
+            border: 0;
+            width: 100%;
+        }
+
+        .modal-body.share-body img {
+            width: 60px;
+            height: 60px;
+        }
+
+        /* Container for positioning */
+        .popup-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicks to pass through */
+        }
+
+        /* Popup styling */
+        .popup {
+            background-color: #f3f3f3;
+            margin: auto; /* Helps with centering in IE11 */
+            box-shadow: 0 2px 6px rgba(0,0,0,.3);
+            width: auto; /* Adjust based on content */
+            min-width: 300px; /* Minimum width */
+            max-width: 600px; /* Maximum width */
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            pointer-events: auto; /* Enables clicks on the popup */
+        }
+    </style>
+
+
+
+</head>
+
+<body class="offcanvas-open">
+
+
+
+    <script src="https://www.gstatic.com/firebasejs/8.2.9/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.9/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.9/firebase-messaging.js"></script>
+    <!-- <script src="app.js"></script> -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"
+        integrity="sha512-Q7HOppxoH0L2M7hreVoFCtUZimR2YaY0fBewIYzkCgmNtgOOZ5IgMNYxHgfps0qrO1ef5m7L1FeHrhXlq1I9HA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://maps-gl.nextbillion.io/maps/v2/api/js"></script>
+
+
+    <div id="notifier" class="center" style="position:fixed;
+        top: 10%;
+        left: 50%;
+        width:24em;
+        height:18em;
+        display: none;
+        margin-top: -9em; /*set to a negative number 1/2 of your height*/
+        margin-left: -12em; /*set to a negative number 1/2 of your width*/
+        border: 1px solid #ffffff;
+        background-color: #ffffff;">
+        <p style="text-align:center;font-family:Poppins">Cab live tracking is not available currently,<br> as you have
+            already been marked as boarded/No-Show.</p>
+
+    </div>
+    <div class="container2">
+        <div id="output"></div>
+    </div>
+    <div id="map">
+    </div>
+
+
+    <!-- First Modal -->
+    <div class="modal fade" id="firstModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" id="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p>IMPORTANT protocols to follow at Accenture if you are unwell or a close contact of a Coronavirus
+                        positive individual.</p>
+
+                    <ul class="list my-3" id="modal-list">
+                        <li>Stay home if you are unwell.</li>
+                        <li>Seek medical advice if you have a fever, cold, headache, cough or other flu-like symptoms.
+                            Contact ASOC at +91 80 71641777 / 080 69541777 . Inform your supervisor/ HR representative
+                            immediately</li>
+                        <li>DO NOT return to office until you have been notified through e-mail by your HR
+                            Representative that you can do so</li>
+                    </ul>
+
+                    <p>Regards, India Accenture Workplace Solutions</p>
+
+                    <div class="d-grid"><button type="button" class="btn btn-dark btn-cst offWhite mt-4"
+                            data-bs-toggle="modal" data-bs-target="#secondModal" data-bs-dismiss="modal">OK</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- First Modal -->
+
+    <!-- Second Modal -->
+    <div class="modal fade" id="secondModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" id="modal-dialog2">
+            <div class="modal-content">
+                <div class="modal-body">
+
+                    <div class="d-block text-center">
+                        <p>New Features in eTMS Buddy</p>
+                        <img src="images/logo.svg" alt="">
+                    </div>
+
+                    <ul class="list">
+                        <li><strong class="d-block">Cab users can mark themselves as "no-show" </strong>
+                            If you've missed cancelling your scheduled ride for day, you can now mark yourself as
+                            "no-show" on the "Where is my cab" tab. You no longer have to wait for the transport
+                            helpdesk to call you.</li>
+
+                        <li><strong class="d-block">Check the boarding status of fellow passengers </strong>
+                            You will now be able to check the boarding status of your fellow passengers under the "cab
+                            info" tab. Use this feature to get real-time updates on scheduled pick-ups.</li>
+                    </ul>
+
+                    <div class="d-grid"><button type="button" class="btn btn-dark btn-cst mt-4 offWhite"
+                            data-bs-dismiss="modal">OK</button></div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Second Modal -->
+
+    <!-- <div id="myModal" class="modal-driverImage">
+        <button class="btn-close1" id="btn-close1">&times;</button>
+        <img class="modal-content" id="img01">
+        <div id="caption"></div>
+    </div> -->
+
+    <div class="popup-container" id="popup">
+        <div class="popup">
+            Your Cab's current location cannot be determined as we do not seem to be receiving data from the Driver's mobile.
+            Please contact the Driver to know his exact location.
+        </div>
+    </div>
+
+    <!-- <div id="popup"
+        style="width: 90%;z-index: 1023;position: absolute;top: 10%;height: 20%;right: 5%;background-Color: #f3f3f3;box-shadow: 0 2px 6px rgba(0,0,0,.3);display:none;">
+        <div style="margin: 5%;text-align: center;font-size: LARGE;">
+            Your Cab's current location cannot be determined as we do not seem to be receiving data from the Driver's
+            mobile.
+            Please contact the Driver to know his exact location.
+        </div>
+    </div> -->
+
+    <!-- Driver and Guard Info Box -->
+
+    <div id="main" class="driverBx">
+        <img src="images/logo_icon.svg" class="logo_icon" alt="">
+        <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel" data-bs-interval="false">
+            <div class="carousel-indicators" id="carousel-indicators">
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active"
+                    aria-current="true" aria-label="Slide 1" id="carousel-inner"></button>
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1"
+                    aria-label="Slide 2" id="carousel-item"></button>
+            </div>
+            <div class="reaching bg-success" id="eta_div">
+                <h4 id="eta"></h4>
+
+
+            </div>
+
+            <div class="carousel-inner" id="carousel-inner">
+                <div class="carousel-item active">
+                    <div class="DetalBx">
+                        <div class="imgBx" id="imgBx" data-bs-target="#imageDriver">
+                        </div>
+                        <div class="personDetalBx">
+                            <span class="badge rounded-pill driver_badge">Driver</span>
+                            <h2 id="tdname">
+                            </h2>
+                            <h3>
+                                <table>
+                                    <tr>
+                                        <td style="text-transform: uppercase;" id="td_vtype"></td>
+                                        <td>&nbsp;|&nbsp;</td>
+                                        <td id="td_regno"></td>
+                                    </tr>
+                                </table>
+                            </h3>
+                            <span class="badge rounded-pill otp" id="Otp">
+                                <h3 id="Otp"></h3>
+                            </span>
+                            <span class="badge rounded-pill otp" id="boarding_status">
+                                <h3 id="boarding_status"></h3>
+                            </span>
+
+                        </div>
+                    </div>
+
+                </div>
+                <div class="carousel-item" id="carousel-item1">
+                    <div class="DetalBx" id="carousel-item1">
+                        <div class="imgBxGuard" id="imgBxGuard">
+                        </div>
+                        <div class="personDetalBx">
+                            <span class="badge rounded-pill driver_badge">Guard</span>
+                            <h2 id="guardname"></h2>
+                            <h3 id="escortid"></h3>
+                            <!-- <span class="badge rounded-pill otp"> -->
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Driver and Guard Info Box -->
+    <!-- window.open('https://www.etmsonline.in/empchat/empchat.html?routeid='+routeid+'&driverno='+driver_contact+'&empname='+empname+''); -->
+
+    <!-- Chat button -->
+
+    <!-- <a href="#!" class="chat" id="chat" data-bs-toggle="modal" data-bs-target="#chatModal">
+        <img src="images/chat.svg" /> Chat with Driver
+    </a> -->
+    <!-- <a href="#!" class="chat" id="chat"
+        onclick="window.open('C:\Users\ashpr\OneDrive\Desktop\eTMSMAP_original?routeid='+routeid+'&driverno='+driver_contact+'&empname='+empname+'');">
+        <img src="images/chat.svg" /> Chat with Driver
+    </a> -->
+
+    <!-- <a href="#!" class="chat" data-bs-toggle="offcanvas" data-bs-target="#chatBox" id="chat">
+        <img src="images/chat.svg"> Chat with Driver
+    </a> -->
+
+    <!-- Chat Box -->
+
+
+
+    <!-- Chat button -->
+
+
+
+
+    <!-- Call action div -->
+
+    <!-- <div class="call_action" id="call_action">
+        <a href="#!" data-bs-toggle="modal" data-bs-target="#noShowModal" id="selfNoShowButton">
+            <img src="images/no_show.svg" alt="">
+            <small>Self No Show</small>
+        </a>
+        <div id="help_btn">
+            <button id="helpbutton">
+                <a id="aTag">
+                    <img src="images/helpdesk.svg" alt="">
+                    <small>Call Helpdesk</small>
+                </a>
+            </button>
+        </div>
+        <div id="call_btn">
+            <button id="driver">
+                <img src="images/call.svg" alt="">
+                <small>Call Driver</small>
+            </button>
+        </div>
+    </div> -->
+
+
+    <div class="call_action text-center d-block" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom"
+        aria-controls="offcanvasBottom" id="call_action">
+
+        <a href="#!" class="fs-3">Tap For Options</a>
+
+    </div>
+    <div class="offcanvas offcanvas-bottom offcanvasTapBtn" tabindex="-1" id="offcanvasBottom"
+        aria-labelledby="offcanvasBottomLabel">
+        <div class="tap_action">
+
+            <div>
+                <button id="selfNoShowButton">
+                    <a href="#!" data-bs-toggle="modal" data-bs-target="#noShowModal" data-bs-dismiss="offcanvas">
+                        <img src="images/icon1.png" alt="">
+                        <small>Self No Show</small>
+                    </a>
+                </button>
+            </div>
+
+
+            <div id="help_btn">
+                <button id="helpbutton">
+                    <a href="#!" id="aTag" data-bs-dismiss="offcanvas"  >
+                        <img src="images/icon4.png" alt="">
+                        <small>Call Helpdesk</small>
+                    </a>
+                </button>
+            </div>
+
+            <div>
+                <button id="call_btn">
+                    <a id="driver" data-bs-dismiss="offcanvas">
+                        <img src="images/icon3.png" alt="">
+                        <small>Call Driver</small>
+                    </a>
+                </button>
+            </div>
+
+            <div>
+                <button id="sharebut">
+                    <a href="#!"  data-bs-toggle="modal"  data-bs-dismiss="offcanvas" data-bs-target="#exampleModal">
+                        <img src="images/icon5.png" alt="">
+                        <small>Share My Trip</small>
+                    </a>
+                </button>
+            </div>
+
+            <div class="icon-container" >
+                <button id="chat">
+                    <a href="#!" data-bs-toggle="offcanvas" data-bs-target="#chatBox" >
+                        <img src="images/icon6.png" alt="">
+                        <small>Chat</small>
+                    </a>
+                </button>
+            </div>
+
+            <div>
+                <button id="cabnoshow">
+                    <a href="#!" data-bs-dismiss="offcanvas">
+                        <img src="images/icon2.png" alt="">
+                        <small>Cab No Show</small>
+                    </a>
+                </button>
+            </div>
+
+
+
+
+
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-custom offcanvas-bottom " tabindex="-1" id="chatBox"
+        aria-labelledby="offcanvasBottomLabel" id="offcanvasExample">
+        <div class="offcanvas-header offcanvas-header-custom">
+            <div class="d-flex justify-content-start align-items-center">
+                <button type="button" class="btn-left me-3" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <div class="d-flex justifiy-content-center align-items-center">
+                    <div id="imgBx1"></div>
+                    <h5 class="ms-3">
+                        <div id="tdname1"></div><small>
+                            <table>
+                                <tr>
+                                    <td id="td_vtype1"></td>
+                                    <td>&nbsp;|&nbsp;</td>
+                                    <td id="td_regno1"></td>
+                                </tr>
+                            </table>
+                        </small>
+                    </h5>
+                </div>
+            </div>
+            <!-- <div class="d-flex justify-content-end">
+                <button class="btn" id="dropDown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+                        class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                        <path
+                            d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+                    </svg>
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropDown">
+                    <a class="dropdown-item" href="#" id="shareLocation">
+                        <img src="images/location_icon.png" alt="location" width="24" height="24">
+                        Share Location
+                    </a>
+
+                </div>
+            </div> -->
+
+        </div>
+        <div class="offcanvas-body small scroller">
+            <div class="scroller-content">
+                <div id="chat-messages"></div>
+            </div>
+        </div>
+
+
+        <div class="offcanvas-footer">
+            <div class="scrollable-tabs-container">
+                <div class="left-arrow">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                </div>
+                <div id="chat-messages1-div">
+                    <ul id="chat-messages1">
+                    </ul>
+                </div>
+                <div class="right-arrow active">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+            </div>
+            <input class="chatInput" id="message-input" placeholder="Enter Message..." type="text"
+                autocomplete="off" oninput="validateInput(this)"></input>
+            <img src="images/send_button_1.png" alt="" id="send-button">
+        </div>
+
+    </div>
+
+
+    <!-- Call action div -->
+
+    <!-- No Show Modal -->
+    <div class="modal fade" id="noShowModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+
+                    <h5>Confirmation</h5>
+                    <h6>Are you sure that you want to mark as No-Show for this trip?</h6>
+
+                    <div class="row">
+                        <div class="col-6"><button type="button" class="btn w-100 btn-outline-secondary btn-cst"
+                                data-bs-dismiss="modal">Cancel</button></div>
+                        <div class="col-6" id="selfnoshow"><button type="button" class="btn w-100 btn-danger btn-cst"
+                                data-bs-dismiss="modal">OK</button></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Show Modal -->
+
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div onclick="share()">
+                        <a href="#!">
+                            <img src="images/whatsapp.png" alt="WhatsApp">
+                            <small>Share through WhatsApp</small>
+                        </a>
+                    </div>
+                    <div onclick="share1()">
+                        <a href="#!">
+                            <img src="images/messaging_icon.png" alt="Messaging Icon">
+                            <small>Share through message</small>
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-footer">
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="imageDriver" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div>
+                        <p>Hello World</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+
+        $(document).ready(function () {
+
+            if ((clientid == '4' || clientid == '14' || clientid == '13' || clientid == '15' || clientid == '10' || clientid == '25' || clientid == '26' || clientid == '22') && (appwimc == 0)) {
+                $('#firstModal').modal('show');
+            }
+            else{
+                $("#firstModal").hide();
+            }
+            
+            var $offcanvas = $('#offcanvasExample');
+
+            // When the offcanvas is shown
+            $offcanvas.on('show.bs.offcanvas', function () {
+                // Add the class to the body
+                $('body').addClass('offcanvas-open');
+            });
+
+            // When the offcanvas is hidden
+            $offcanvas.on('hidden.bs.offcanvas', function () {
+                // Remove the class from the body
+                $('body').removeClass('offcanvas-open');
+            });
+        });
+
+        let etainterval; // Declare a variable to store the interval ID
+        let currentInterval = 2000; // Initial interval time (2 seconds)
+
+        function dynamicInterval() {
+            clearInterval(etainterval); // Clear the previous interval (if any)
+
+            etainterval = setInterval(function () {
+                // Your code to be executed at the dynamic interval
+                if ((toloc == "null,null") || (toloc == "0,0") || (toloc == ",") || (toloc == "undefined,undefined") || (toloc == "Nan,Nan") || (clientid == '25')) {
+                    //console.log("toloc");
+                    $('#eta').hide();
+                    return;
+                }
+                $.ajax({
+                    cache: false,
+                    type: "GET",
+                    url: "https://api.nextbillion.io/distancematrix/json?origins=" + fromloc + "&destinations=" + toloc + "&mode=car&key=88db710a74e44bf59a27b365912e06bb&avoid=highway",
+                    crossDomain: true,
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    success: OnSuccess,
+                    error: OnError
+                });
+
+                function OnSuccess(data, status) {
+                    console.log(data.rows[0].elements[0].duration);
+                    var eta = secondsToHms(data.rows[0].elements[0].duration.value);
+                    document.getElementById('eta').innerHTML = '<small>Reaching in<br></small>' + eta;
+                }
+                function OnError(request, status, error) {
+                }
+
+                // Change the interval time based on conditions
+                if ((myTrackingStatus == "Boarded" || tripType == 'D') || (myTrackingStatus == "No-Show" || tripType == 'D')) {
+                    currentInterval = 10000000;
+                }
+                else if (first != true) {
+                    currentInterval = 120000; // Set a 5-second interval
+                }
+                else {
+                    currentInterval = 2000;
+                    first = false; // Set a 2-second interval (default)
+                }
+
+
+                // Clear and reset the interval with the updated interval time
+                clearInterval(etainterval);
+                etainterval = setInterval(dynamicInterval, currentInterval);
+            }, currentInterval); // Initial interval time
+        }
+
+
+
+        $('#notifier').hide();
+        function openNav() {
+            document.getElementById("mySidenav").style.width = "250px";
+        }
+
+        function closeNav() {
+            document.getElementById("mySidenav").style.width = "0";
+            $("#whatsapp").hide(); $("#sms").hide();
+        }
+        var locupdate;
+        var marker = [];
+
+        var eta = '';
+        var b2bflag = 1;
+        var url = [];
+        var URL_RouteDetail = '';
+        var URL_GetGPSLogger = '';
+        var fromloc = '77.087353,28.462420';
+        var toloc = '';
+        var OTP;
+        var map = null;
+        var gender;
+        var tripType;
+        var employeeid;
+        var poly = [];
+        var decorator;
+        var line;
+        var interval = 0;
+        var driver_contact = [];
+        var driver_contact1 = ''
+        var drivername = [];
+
+        var vehicleRegNo = [];
+        var vehicletype = [];
+        var tptContactNo = [];
+        var emplatlng;
+        var emplatlng1;
+        var empname = '';
+        var emp_contact = '';
+        var cabnoshowradius = '';
+        var homelatlng = '';
+        var URL_UpdateCabNoShow = '';
+        var myTrackingStatus = '';
+        var isproximity = 1;
+        var pp = [];
+        // var center = new L.LatLng(28.549948, 77.268241);
+        // var empcode = [];
+        // var center = new L.LatLng(28.549948, 77.268241);
+        // var empcode = [];
+        var first = true;
+        var first1 = true;
+        /*******NBM changes 21 july 23********/
+        var nbmap;
+        var driverlat; var driverlng
+        var position = [];
+        /****End*****/
+
+
+
+        $(document).on('click', '#guardicon', function () {
+            $('#main').hide();
+            $('#mainG').show();
+            $("#wheelicon").css("background-color", "white"); $("#guardicon").css("background-color", "Yellow");
+        });
+
+
+        $(document).on('click', '#wheelicon', function () {
+
+            $('#mainG').hide();
+            $('#main').show();
+            $("#guardicon").css("background-color", "white"); $("#wheelicon").css("background-color", "Yellow");
+
+        });
+
+        function getQueryStringValue(key) {
+            return unescape(
+                window.location.search.replace(
+                    new RegExp(
+                        "^(?:.*[&\\?]" +
+                        escape(key).replace(/[\.\+\*]/g, "\\$&") +
+                        "(?:\\=([^&]*))?)?.*$",
+                        "i"
+                    ),
+                    "$1"
+                )
+            );
+        }
+
+        function getQueryStringValue1(key) {
+            return unescape(
+                window.location.search.replace(
+                    new RegExp(
+                        "^(?:.*[&\\?]" +
+                        escape(key).replace(/[\.\+\*]/g, "\\$&") +
+                        "(?:\\=([^&]*))?)?.*$",
+                        "i"
+                    ),
+                    "$2"
+                )
+            );
+        }
+
+
+
+        var value = getQueryStringValue("v");
+        var value1 = getQueryStringValue("s");
+        //parses the string to get the value for route id , client id and empid
+        //its of the form clientid-routeid-empid
+        var vs = value.substring(4, value.length);
+
+
+        var clientid = parseInt(value.substring(0, 4));
+        var routeid = '';
+        var empid = '';
+
+
+        if (value.length == 25) {
+            empid = (value.slice(value.length - 8, value.length));
+            routeid = vs.substring(0, vs.length - 8);
+            console.log(empid);
+            console.log(routeid);
+        }
+        else if (value.length == 24) {
+            empid = (value.slice(value.length - 7, value.length));
+            routeid = vs.substring(0, vs.length - 7);
+            console.log(empid);
+            console.log(routeid);
+        }
+        else if (value.length == 23 || value.length == 21) {
+            empid = (value.slice(value.length - 6, value.length));
+            routeid = vs.substring(0, vs.length - 6);
+            console.log(empid);
+            console.log(routeid);
+        }
+        else if (value.length == 22 || value.length == 20) {
+            empid = (value.slice(value.length - 5, value.length));
+            routeid = vs.substring(0, vs.length - 5);
+            console.log(empid);
+            console.log(routeid);
+        }
+        else if (value.length == 19) {
+            empid = (value.slice(value.length - 4, value.length));
+            routeid = vs.substring(0, vs.length - 4);
+            console.log(empid);
+            console.log(routeid);
+        }
+        var myUrl = window.location.href;
+        //alert(myUrl);
+        var murl = myUrl.split("&");
+        var appwimc = 0;
+        var surl;
+        if (murl[1] == 'app=1') {
+            appwimc = 1;
+            surl = murl[2];
+        }
+        else if (murl[2] == 'app=1') {
+            appwimc = 1;
+            surl = murl[1];
+        }
+        else {
+            surl = murl[1];
+            appwimc = 0;
+        }
+
+
+        // $("#sharebut").on("click", function () {
+        //     //  $("#sharebut1").slideToggle(500);
+        //     // $("#share").show();
+        //     //  $("#popupshare").toggle();
+        //     $("#whatsapp").show(); $("#sms").show();
+
+        //     //share();
+        // });
+
+        // $("#whatsapp").on("click", function () {
+        //     //  $("#sharebut1").slideToggle(500);
+        //     // $("#share").show();
+
+
+        //     share();
+        // });
+        // $("#sms").on("click", function () {
+        //     //  $("#sharebut1").slideToggle(500);
+        //     // $("#share").show();
+
+
+        //     share1();
+        // });
+        
+        if ((clientid == '4' || clientid == '14' || clientid == '13' || clientid == '15' || clientid == '10' || clientid == '25' || clientid == '26' || clientid == '22') && (appwimc == 0)) {
+            // this has to be included in the above condition has been removed for the time being.
+            //$("#firstModal").show();
+            $('#cabnoshow').show();
+            $('#chat').show();
+
+        }
+        else {
+            //$("#firstModal").hide();
+            $("#modal-dialog").hide();
+            $("#modal-dialog2").hide();
+            $(".modal fade").hide();
+
+            document.body.classList.add('disable-modal-styles');
+
+            $('#cabnoshow').hide();
+            $('#chat').hide();
+            $('#selfNoShowButton').hide();
+        }
+
+        $("#covidok").on("click", function () {
+            $("#popupcovid").hide();
+            $("#popupcovid2").show();
+        });
+
+        $("#covidok2").on("click", function () {
+            $("#popupcovid2").hide();
+        });
+
+        if ((toloc == "null,null") || (toloc == "0,0") || (toloc == ",") || (toloc == "undefined,undefined") || (toloc == "Nan,Nan") || (clientid == '25')) {
+            //console.log("toloc");
+            $('#eta').hide();
+        }
+
+
+        $("#selfnoshow").on("click", function () {
+            var selfnoshowconfirm = confirm('Do you want to mark yourself as no-show?');
+            if (selfnoshowconfirm == true) {
+                console.log("self no show clicked");
+                if (myTrackingStatus != '----') {
+                    alert("You cannot mark yourself as No-Show for this trip as you are already marked as " + myTrackingStatus + " for this trip.");
+                }
+                else {
+                    $.ajax({
+                        type: 'POST',
+                        cache: false,
+                        url: URL_UpdateTrackingSelf,
+                        data: JSON.stringify({
+                            routeid: routeid,
+                            empid: empid,
+                            trackingaction: 'N',
+                            actionby: '0',
+                            distance: employeeid
+                        }),
+                        crossDomain: true,
+
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'json'
+                    })
+                        .done(function (data) {
+
+                            alert("You have marked yourself as No-Show.")
+
+                        })
+                        .fail(function (e) {
+                            alert('Error: ' + e.statusText);
+                        })
+                        .always(function () { });
+
+                }
+            }
+            else {
+                console.log("cancelled");
+            }
+        });
+
+
+        $("#cabnoshow").on("click", function () {
+            function arePointsNear(checkPoint, centerPoint, km) {
+                var ky = 40000 / 360;
+                var kx = Math.cos((Math.PI * centerPoint.lat) / 180.0) * ky;
+                var dx = Math.abs(centerPoint.lng - checkPoint.lng) * kx;
+                var dy = Math.abs(centerPoint.lat - checkPoint.lat) * ky;
+                return Math.sqrt(dx * dx + dy * dy) <= km;
+            }
+            getLocation();
+
+            function getLocation() {
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(showPosition, showError);
+                } else {
+                    alert("Geolocation is not supported by this browser.");
+                }
+            }
+
+            function showPosition(position) {
+
+                var homelatlng = { lat: position.coords.latitude, lng: position.coords.longitude };
+                var n = arePointsNear(homelatlng, emplatlng1, cabnoshowradius);
+                if (n == true) {
+                    var confirmArrived = confirm('Do you want to mark the cab as no-show?');
+                    if (confirmArrived == true) {
+                        $.ajax({
+                            type: 'POST',
+                            cache: false,
+                            url: URL_UpdateCabNoShow,
+                            data: JSON.stringify({
+                                "routeid": routeid,
+                                "empid": empid,
+                                "trackingaction": employeeid,
+                                "lat": '0',
+                                "lng": '0'
+                            }),
+                            crossDomain: true,
+
+                            contentType: 'application/json; charset=utf-8',
+                            dataType: 'json'
+                        })
+                            .then(function (data) {
+                                console.log(' updated');
+                                alert('Thank you for the NO Show alert, we will notify the driver immediately.');
+                                $("#cabnoshow").hide();
+                            })
+                            .fail(function (e) {
+                                console.log('Error : ' + e);
+                            });
+                    }
+                    else {
+                        console.log('cab no show cancelled')
+                    }
+                }
+                else {
+                    alert('Current location does not match pick-up location. Reach pick-up point to confirm Cab as No show. ');
+
+                }
+
+            }
+
+            function showError(error) {
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        alert("User denied the request for Geolocation.");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        alert("Location information is unavailable.");
+                        break;
+                    case error.TIMEOUT:
+                        alert("The request to get user location timed out.");
+                        break;
+                    case error.UNKNOWN_ERROR:
+                        alert("An unknown error occurred.");
+                        break;
+                }
+            }
+            // $("#cabnoshow").hide();
+        });
+
+        function share() {
+            $(document).ready(function () {
+                var isMobile = {
+                    Android: function () {
+                        return navigator.userAgent.match(/Android/i);
+                    },
+                    BlackBerry: function () {
+                        return navigator.userAgent.match(/BlackBerry/i);
+                    },
+                    iOS: function () {
+                        return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+                    },
+                    Opera: function () {
+                        return navigator.userAgent.match(/Opera Mini/i);
+                    },
+                    Windows: function () {
+                        return navigator.userAgent.match(/IEMobile/i);
+                    },
+                    any: function () {
+                        return (
+                            isMobile.Android() ||
+                            isMobile.BlackBerry() ||
+                            isMobile.iOS() ||
+                            isMobile.Opera() ||
+                            isMobile.Windows()
+                        );
+                    }
+                };
+                //alert(isMobile)
+                if (isMobile.any()) {
+
+                    if (gender == 'M') {
+
+                        var url = empname + " wants you to view his cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                    }
+                    else if (gender == 'F') {
+
+                        var url = empname + " wants you to view her cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                    }
+                    else {
+                        var url = empname + " wants you to view their cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                    }
+                    var message = encodeURIComponent(url);
+                    //sharedStat=1;
+                    var whatsapp_url = "whatsapp://send?text=" + message;
+                    window.location.href = whatsapp_url;
+                } else {
+                    alert("Please share this article in mobile device");
+
+                }
+            });
+
+        }
+
+
+        function share1() {
+            var getOS = function () {
+                var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                if (
+                    userAgent.match(/iPad/i) ||
+                    userAgent.match(/iPhone/i) ||
+                    userAgent.match(/iPod/i)
+                ) {
+                    return "iOS";
+                } else if (userAgent.match(/Android/i)) {
+                    return "Android";
+                } else {
+                    return "unknown";
+                }
+            }
+
+            var device = getOS();
+
+            if (gender == 'M') {
+
+                var url = empname + " wants you to view his cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+            }
+            else if (gender == 'F') {
+
+                var url = empname + " wants you to view her cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+            }
+            else {
+                var url = empname + " wants you to view their cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+            }
+
+            var message = encodeURIComponent(url);
+
+            if (device == "iOS") {
+                window.location.href = "sms: &body=" + message;
+            }
+
+            if (device == "Android") {
+                window.location.href = "sms:?body=" + message;
+            }
+        }
+
+
+
+        function secondsToHms(d) {
+            d = Number(d);
+            var h = Math.floor(d / 3600);
+            var m = Math.floor(d % 3600 / 60);
+            var s = Math.floor(d % 3600 % 60);
+
+            var hDisplay = "", mDisplay = "", sDisplay = "";
+            if (h > 0) {
+                if (h == 1) {
+                    mDisplay = h + " hr ";
+                }
+                else {
+                    hDisplay = h + " hrs ";
+                }
+            }
+            if (m > 0) {
+                if (m == 1) {
+                    mDisplay = m + " min ";
+                } else {
+                    mDisplay = m + " mins ";
+                }
+            }
+            if (s > 0) {
+                sDisplay = s + "s";
+
+            }
+            if (!(h > 0) && !(m > 0) && s > 0) {
+                return "Soon";
+            }
+
+            return hDisplay + mDisplay; //+ sDisplay;
+        }
+
+        if (value || value1) {
+
+            $('#noteBox').hide();
+
+            $.ajax({
+                cache: false,
+                type: "GET",
+                username: "user1",
+                password: "Acc@bang10",
+                url: "https://www.etmsdrive.in/appControlRest/api/v1/getClientDetailById",
+                data: {
+                    CID: clientid
+                },
+                crossDomain: true,
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: OnSuccess3,
+                error: OnError3
+            });
+
+            function OnSuccess3(data, status) {
+                $("#loader").hide();
+                $("#output").empty();
+                $.each(JSON.parse(data), function (key, val) {
+                    url.push(val.URL);
+                    //BASE_URL = url[0];
+                    //TrackURL = val.dashboardurl; // uncommnent this one when this comes from api
+                    TrackURL = val.trackurl; //Changed by Anurag, On 29-11-17, to implement in amex
+                    BASE_URL = val.trackurl; //Changed by Anurag, On 29-11-17, to implement in amex
+                    // //until then use this one below.
+                    //TrackURL = "https://www.etmsdrive.in/etmsDrive/api/tracking/v1/";
+                    MEDIA_URL = "";
+                    //#change
+                    var URL_cabvalidation = TrackURL + "MyCabValidation";
+                    var URL_ProfilePicture = val.photourl;
+                    URL_CallingAPI = TrackURL + "CallingAPI";
+                    URL_RouteInfo = TrackURL + "GetRouteInfoMyCab";
+                    URL_RouteDetail = TrackURL + "GetRouteDetail";
+                    URL_GetGPSLogger = TrackURL + "GetGPSLogger";
+                    URL_UpdateCabNoShow = TrackURL + 'UpdateCabNoShow';
+                    URL_UpdateTrackingSelf = TrackURL + 'UpdateTrackingSelf';
+
+                    $.ajax({
+                        type: "POST",
+                        username: "user1",
+                        password: "Acc@bang10",
+                        url: URL_RouteInfo, //URL_RouteInfo = BASE_URL+"GetRouteInfoMyCab";
+                        data: "{RouteID:'" + routeid + "'}",
+                        crossDomain: true,
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: OnSuccess2,
+                        error: OnError2
+                    });
+                    function OnSuccess2(data, status) {
+
+                        $.each(JSON.parse(data), function (key, val) {
+                            //	console.log(JSON.stringify(data, null, 4))
+
+                            if (val.routeID != 'NA') {
+                                if (val.actVehicleStartTime != null && val.actVehicleStartTime != '' && val.actVehicleStartTime != undefined) {
+
+                                    if (clientid == '4' || clientid == '10' || clientid == '14' || clientid == '13' || clientid == '15' || clientid == '25' || clientid == '26') {
+                                        $('#hamburgernav').show();
+                                    }
+                                    else {
+                                        $('#hamburgernav').hide();
+                                    }
+
+                                }
+
+                                if(val.chatonlyforpwd == '0'){
+                                    $('#chat').show();
+                                }
+                                else if(val.chatonlyforpwd == '1'){
+                                    if(val.is_pwd == '1'){
+                                        $('#chat').show();
+                                    }
+                                    else{
+                                        $('#chat').hide();
+                                    }
+                                }
+                                else{
+                                    $('#chat').hide();
+                                }
+                                //var profileurl = MEDIA_URL + "ProfilePicture/" + val.ProfilePicture;
+                                cabnoshowradius = val.cabnoshowradius / 1000;
+                                driver_contact.push(val.driverContact);
+                                driver_contact1 = val.driverContact;
+                                var profileurl = URL_ProfilePicture + val.driverContact + ".jpeg";
+                                var EscortImage = val.guardphotourl;
+
+                                //var profileurl =URL_ProfilePicture
+                                var p = val.vehicleRegNo.toUpperCase();
+                                if (val.isb2b == "1") {
+                                    b2bflag = "3";
+                                } else {
+                                    b2bflag = "1";
+                                }
+                                if (val.guardid == '' || val.guardid == null) {
+
+                                    console.log('no guard');
+                                    $('#carousel-indicators').hide();
+                                    $('#carousel-item1').hide();
+                                    // const carousel = document.getElementById('carousel-inner');
+                                    // carousel.setAttribute('data-bs-slide-to', null);
+
+                                    const carouselExampleIndicators = document.getElementById('carouselExampleIndicators');
+                                    carouselExampleIndicators.setAttribute('data-bs-touch', "false");
+                                    //var carouselInstance = new bootstrap.Carousel(carouselExampleIndicators);
+
+                                }
+                                else {
+                                    $('#guardicon').show();
+                                    $('#wheelicon').show();
+                                    console.log('guard');
+
+                                }
+
+                                drivername.push(val.driverName);
+                                vehicleRegNo.push(p);
+                                vehicletype.push(val.vehicleType);
+
+                                tptContactNo.push(val.tptContactNo);
+                                $("#guardname").html(val.guardname);
+                                $("#escortid").html(val.guardid);
+
+
+                                //  center = new L.LatLng(val.faclat, val.faclng);
+
+                                $('#tdname').html(drivername);
+                                $('#tdname1').html(drivername);
+                                $('#td_regno').html(vehicleRegNo);
+                                $('#td_regno1').html(vehicleRegNo);
+                                $('#td_vacstatus').html(val.drivervactatus);
+                                $('#td_vacstatusE').html(val.guardvacstatus);
+                                $('#td_vtype').html(vehicletype);
+                                $('#td_vtype1').html(vehicletype);
+                                console.log("")
+
+
+                                var img = new Image();
+                                var img1 = new Image();
+                                var div = document.getElementById('imgBx');
+                                var div1 = document.getElementById('imgBx1');
+                                img.id = "driverImage";
+                                img.alt = "driver's image"
+                                img1.id = "driverImage";
+                                img1.alt = "driver's image"
+                                img.src = profileurl;
+                                img1.src = profileurl;
+                                // img.style.width = '100%';
+                                img.style.width = '110px'
+                                img1.style.width = '53px'
+                                img.style.height = '148px'
+                                img1.style.height = '53px'
+                                img.style.borderTopLeftRadius = '24px'
+                                img1.style.borderRadius = '50%'
+
+                                div.appendChild(img);
+                                div1.appendChild(img1);
+
+                                $("#driverImage").on("error", function () {
+                                    $(this).attr('src', 'images/user_image.png');
+                                });
+
+                                var imgE = new Image();
+
+                                var divE = document.getElementById('imgBxGuard');
+                                imgE.id = "EscortImage";
+                                imgE.src = EscortImage;
+
+                                imgE.style.width = '110px'
+                                imgE.style.height = '148px'
+                                imgE.style.borderTopLeftRadius = '24px'
+
+                                divE.appendChild(imgE);
+
+                                $("#EscortImage").on("error", function () {
+                                    $(this).attr('src', 'images/user_image.png');
+                                });
+
+
+                            }
+                        });
+
+                    } function OnError2(request, status, error) {
+                        $("#loader").hide();
+                        $("#output").empty();
+                        $("#output").html(
+                            "Error: Connecting to server");
+
+                        $("#height").css("output", "2%");
+
+
+                    }
+
+                    $.ajax({
+                        type: "POST",
+                        username: "user1",
+                        password: "Acc@bang10",
+                        url: URL_RouteDetail, //GetRouteDetail
+                        // data: "{RouteID: '" + routeid + "',flag:'3'}",
+                        data: "{RouteID: '" + routeid + "',flag:'" + b2bflag + "'}",
+                        crossDomain: true,
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: sucess1,
+                        error: err1
+                    });
+
+                    function sucess1(data, status) {
+                        
+                        $.each(JSON.parse(data), function (key, val) {
+                            console.log('::::::::::>' + val.trackingStatus);
+                            console.log(val.id);
+                            console.log(val.tripType);
+                            console.log(val.empName);
+                            //emplatlng1 = new L.LatLng(val.lat, val.lng);
+                            emplatlng1 = { lat: val.lat, lng: val.lng };
+                            console.log("emplatlng: " ,emplatlng1);
+                            if (val.id == empid) {
+                                gender = val.Gender;
+                                console.log(gender);
+                                employeeid = val.employeeID;
+                                tripType = val.tripType;
+
+                                 
+
+                                if ((val.CabNoShow == 0) && (clientid == '10' || clientid == '14' || clientid == '15' || clientid == '22')) {
+                                    //|| clientid == '25' this has to be include it is removed for the time being.
+                                    $('#cabnoshow').show();
+
+                                    // if (val.empName.includes('- PWD')) {
+                                    //     $('#chat').show();
+                                    // } else {
+                                    //     $('#chat').hide();
+                                    // }
+                                }
+                                else {
+                                    $('#cabnoshow').hide();
+                                }
+
+                                if (val.tripType == 'D') {
+                                    $('#cabnoshow').hide();
+                                    $('#chat').hide();
+                                }
+
+                                if (clientid == '10' || clientid == '14' || clientid == '15' || clientid == '22') {
+                                    //|| clientid == '25' this has to be included it is removed for the time being.
+                                    $("#sharebut").show();
+                                }
+                                else {
+                                    $("#sharebut").hide();
+                                }
+
+                                empname = val.empName;
+                                emp_contact = val.EmpMobile;
+                                //emp_contact.push(val.EmpMobile);
+                                console.log(emp_contact);
+
+
+                                
+
+
+                                myTrackingStatus = val.trackingStatus
+                                if (myTrackingStatus != '----') {
+
+                                    document.getElementById('boarding_status').innerHTML = '<strong >' + myTrackingStatus.toUpperCase() + '</strong>';
+                                    $("#boarding_status").show();
+                                    
+                                }
+                                else {
+                                    document.getElementById('boarding_status').innerHTML = '<strong></strong>';
+                                    $("#boarding_status").hide();
+
+
+                                }
+
+                                OTP = val.boardingOTP;
+                                console.log(OTP);
+                                if (OTP != null) {
+                                    document.getElementById('Otp').innerHTML = '<strong>OTP:  </strong>' + ' ' + OTP;
+                                }
+
+                                if (myTrackingStatus == "No-Show" || val.tripType == 'D') {
+                                    var call_btn = document.getElementById('call_btn');
+                                    call_btn.style.display = 'none';
+                                    var help_btn = document.getElementById('help_btn');
+                                    help_btn.style.display = 'inherit';
+                                    // var call_action = document.getElementById('call_action');
+                                    // call_action.style.alignItems = 'center';
+                                    // call_action.style.justifyContent = 'center';
+                                    // call_action.style.textAlign = 'center';
+                                    var selfnoshow_btn = document.getElementById('selfNoShowButton');
+                                    selfnoshow_btn.style.display = 'none';
+                                    var chat_btn = document.getElementById('chat');
+                                    chat_btn.style.display = 'none';
+                                    //  $("#Otp").hide();
+                                    //  $("#boarding_status").hide();
+                                    //clearInterval(etainterval);
+
+                                    $('#eta_div').hide();
+                                    $("#Otp").hide();
+                                    $('#chat').hide();
+                                    $('#offCanvasBottom').offcanvas('hide');
+                                    $('#chatBox').offcanvas('hide');
+
+
+                                } else if (myTrackingStatus == "Boarded" || val.tripType == 'D') {
+                                    var call_btn = document.getElementById('call_btn');
+                                    call_btn.style.display = 'none';
+                                    //self no show hiding added on 08/09/2023
+                                    var selfnoshow_btn = document.getElementById('selfNoShowButton');
+                                    selfnoshow_btn.style.display = 'none';
+                                    var help_btn = document.getElementById('help_btn');
+                                    help_btn.style.display = 'inherit';
+                                
+                                    var chat_btn = document.getElementById('chat');
+                                    chat_btn.style.display = 'none';
+                                    // var call_action = document.getElementById('call_action');
+                                    // call_action.style.alignItems = 'center';
+                                    // call_action.style.justifyContent = 'center';
+                                    // call_action.style.textAlign = 'center';
+
+                                    // var driverBx = document.getElementById('main');
+                                    // driverBx.attributeName.d
+                                    $('#cabnoshow').hide();
+
+                                    // $("#Otp").hide();
+                                    //$("#boarding_status").hide();
+                                    $('#eta_div').hide();
+                                    $("#Otp").hide();
+                                    $("#chat").hide();
+                                    //clearInterval(etainterval);
+                                    $('#offcanvasBottom').offcanvas('hide');
+                                    $('#chatBox').offcanvas('hide');
+
+
+                                }
+                                else if (myTrackingStatus == "De-Boarded" || val.tripType == 'D') {
+                                    var call_btn = document.getElementById('call_btn');
+                                    call_btn.style.display = 'none';
+                                    var help_btn = document.getElementById('help_btn');
+                                    help_btn.style.display = 'inherit';
+                                    var chat_btn = document.getElementById('chat');
+                                    chat_btn.style.display = 'none';
+                                    // var call_action = document.getElementById('call_action');
+                                    // call_action.style.alignItems = 'center';
+                                    // call_action.style.justifyContent = 'center';
+                                    // call_action.style.textAlign = 'center';
+                                    $('#cabnoshow').hide();
+                                    // $("#Otp").hide();
+                                    //   $("#boarding_status").hide();
+                                    $('#eta_div').hide();
+                                    $("#Otp").hide();
+                                    $("#chat").hide();
+                                    //clearInterval(etainterval);
+                                    $('#offcanvasBottom').offcanvas('hide');
+                                    $('#chatBox').offcanvas('hide');
+                                    var selfnoshow_btn = document.getElementById('selfNoShowButton');
+                                    selfnoshow_btn.style.display = 'none';
+                                }
+                                else {
+                                    var call_btn = document.getElementById('call_btn');
+                                    call_btn.style.display = 'inherit';
+                                    var help_btn = document.getElementById('help_btn');
+                                    help_btn.style.display = 'inherit';
+                                    $('#eta_div').hide();
+                                    $("#Otp").show();
+                                }
+
+
+                                if (value1 == 's') {
+                                    var call_btn = document.getElementById('call_btn');
+                                    call_btn.style.display = 'none';
+                                    var help_btn = document.getElementById('help_btn');
+                                    help_btn.style.display = 'inherit';
+                                    //  $("#Otp").hide();
+                                    //  $("#boarding_status").hide();
+
+                                    //clearInterval(etainterval);
+
+                                    $('#eta_div').hide();
+                                    $("#Otp").hide();
+                                    $("#cabnoshow").hide();
+                                    $("#sharebut").hide();
+                                    $('#hamburgernav').hide();
+                                    $("#chat").hide();
+                                    $('#call_action').hide();
+                                    const element = document.getElementById("call_action");
+
+                                    // Check if the element exists and hide it
+                                    if (element) {
+                                        element.style.display = "none";
+                                    }
+                                }
+
+                                var aTag = document.getElementById('aTag');
+                                aTag.setAttribute('data-rel', 'external');
+                                aTag.setAttribute('href', 'tel:' + tptContactNo[0]);
+
+
+
+                                $('#driver').on("click", function () {
+                                    console.log("driver clicked");
+                                    callLatch();
+                                });
+
+                                function callLatch() {
+                                    confirm1 = confirm("Do you wish to call the driver?");
+                                    if (confirm1 == true) {
+                                        callapi();
+                                    }
+                                }
+
+
+                                // var img = document.getElementById("driverImage");
+                                // var modalImg = document.getElementById("img01");
+                                // var captionText = document.getElementById("caption");
+
+
+                                // try {
+                                //     img.onclick = function () {
+                                //         modal.style.height = "180px";
+                                //         modal.style.width = "180px";
+                                //         modalImg.src = this.src;
+                                //         captionText.innerHTML = this.alt;
+                                //     }
+                                // }
+                                // catch { }
+
+
+                                // Get the <span> element that closes the modal
+                                // var span = document.getElementsByClassName("close")[0];
+
+                                // When the user clicks on <span> (x), close the modal
+                                // span.onclick = function () {
+                                //     modal.style.display = "none";
+                                // }
+
+
+                                var modal = document.getElementById("myModal");
+
+                                // Get the image and insert it inside the modal - use its "alt" text as a caption
+                                var img = document.getElementById("driverImage");
+                                var modalImg = document.getElementById("img01");
+                                var captionText = document.getElementById("caption");
+
+
+                                // try {
+                                //     img.onclick = function () {
+                                //         modal.style.display = "block";
+                                //         modalImg.src = this.src;
+                                //         captionText.innerHTML = this.alt;
+                                //     }
+                                // }
+                                // catch { }
+
+                                // var button = document.getElementById("btn-close1");
+                                // button.onclick = function(){
+                                //     modal.style.display = "none";
+                                // }
+
+                                //Get the <span> element that closes the modal
+                                // var span = document.getElementsByClassName("close")[0];
+
+                                // span.onclick = function () {
+                                //     modal.style.display = "none";
+                                // }
+
+                                // var modal = document.getElementById("myModal");
+
+                                // // Get the image and insert it inside the modal - use its "alt" text as a caption
+                                // var img = document.getElementById("EscortImage");
+                                // var modalImg = document.getElementById("img01");
+                                // var captionText = document.getElementById("caption");
+
+
+                                // try {
+                                //     img.onclick = function () {
+                                //         modal.style.display = "block";
+                                //         modalImg.src = this.src;
+                                //         captionText.innerHTML = this.alt;
+                                //     }
+                                // }
+                                // catch { }
+
+                                // Get the <span> element that closes the modal
+                                // var span = document.getElementsByClassName("close")[0];
+
+                                function callapi() {
+                                    $("#loader").show();
+                                    $.ajax({
+                                        cache: false,
+                                        type: "POST",
+                                        url: URL_CallingAPI,
+                                        data: "{empid: '" +
+                                            empid +
+                                            "',drivermobile: '" +
+                                            driver_contact[0] +
+                                            "',type:'sun'}",
+                                        crossDomain: true,
+                                        contentType: "application/json; charset=utf-8",
+                                        dataType: "json",
+                                        success: OnSuccess2,
+                                        error: OnError2
+                                    });
+
+                                    function OnSuccess2(data, status) {
+                                        $("#loader").hide();
+                                        $("#output").empty();
+                                        alert("Please wait while your call is being connected");
+                                        $.each(JSON.parse(data), function (key, val) {
+                                            //call????
+                                        });
+                                    }
+
+                                    function OnError2(request, status, error) {
+                                        $("#loader").hide();
+                                        $("#output").empty();
+                                        $("#output").html(request.statusText);
+                                    }
+                                }
+                                var lathome = val.lat;
+                                var lnghome = val.lng;
+                                // toloc = lnghome + ',' + lathome;
+
+                                toloc = val.lat + ',' + val.lng;
+                            }
+                        });
+
+                        // map = new MapmyIndia.Map('map', {
+                        //     center: center,
+                        //     zoomControl: false,
+                        //     search: false,
+                        //     location: false,
+                        //     removeLayer: true
+                        // });
+
+
+
+
+                        // $('#flsc_dv').hide();
+
+                        // function addMarker(position, icon, title, i) {
+                        //     /*** position must be instance of L.LatLng ***/
+
+                        //     if (icon == '') {
+                        //         var mk;
+                        //         /***Marker with a default icon and optional parameter draggable, title***/
+                        //         mk = new L.Marker(position, {
+                        //             draggable: false,
+                        //             title: title
+                        //         });
+                        //     } else {
+                        //         /***Marker with a custom icon and optional parameter draggable, title***/
+                        //         var mk;
+                        //         mk = new L.Marker(position, {
+                        //             icon: icon,
+                        //             draggable: false,
+                        //             title: title
+                        //         });
+                        //     }
+                        //     /*Add the marker to the map*/
+                        //     map.addLayer(mk);
+                        //     /**Marker events**/
+
+                        //     return mk;
+                        // }
+
+                        // var icon = L.icon({
+                        //     iconUrl: "home.png",
+                        //     iconRetinaUrl: 'home.png',
+                        //     iconSize: [30, 30]
+                        // });
+
+                        // setTimeout(function () {
+                        //     marker.push(addMarker(emplatlng1, icon, "Home", '').addTo(map));
+                        //     map.panTo(pp[0]);
+                        // }, 2000);
+
+
+
+                        // $('#recentre').on("click", function () {
+                        //     map.panTo(pp[0]);
+                        //     setTimeout(function () {
+                        //         map.setZoom(16);
+                        //     }, 500);
+
+                        // });
+
+                        hi();
+
+                        function hi() {
+                            $.ajax({
+                                type: "POST",
+                                username: "user1",
+                                password: "Acc@bang10",
+                                url: URL_GetGPSLogger,
+                                data: "{deviceId: '" + routeid + "',vendorid:'0'}",
+                                crossDomain: true,
+                                contentType: "application/json; charset=utf-8",
+                                dataType: "json",
+                                success: OnSuccess5,
+                                error: OnError5
+                            });
+
+                            function OnSuccess5(data, status) {
+
+                                $.each(JSON.parse(data), function (key, val) {
+                                    $('#recentre').show();
+                                    console.log(val.lat);
+                                    console.log(val.lng);
+                                    var lat = val.lat;
+                                    var lng = val.lng;
+                                    if (lat == null || lat == undefined) {
+                                        $("#popup").show();
+                                        //  alert ("Your Cab's current location cannot be determined as we do not seem to be receiving data from the Driver's mobile.Please contact the Driver to know his exact location.")
+                                    }
+                                    else{
+                                        $("#popup").hide();
+                                    }
+                                    console.log("null lat" + lat);
+                                    var latlng = [];
+                                    latlng.push(lat);
+                                    latlng.push(lng);
+                                    var lnglat = [];
+                                    lnglat.push(lng);
+                                    lnglat.push(lat);
+                                    fromloc = latlng;
+                                    pp.push(latlng);
+                                    pp.push(latlng);
+                                    driverlat = val.lat;
+                                    driverlng = val.lng;
+                                    position = [driverlat, driverlng];
+
+                                    // map.panTo(pp[0]);
+
+                                    // setTimeout(function () {
+                                    //     map.setZoom(16);
+                                    // }, 500);
+
+                                    dynamicInterval();
+
+                                    ShowMap();
+                                    // drawCarMarkerOnPolyline();
+
+
+                                });
+                            }
+
+                            function OnError5(request, status, error) {
+                                //      $("#output").html(request.statusText);
+                                console.log(error);
+
+                            }
+                        }
+
+
+
+                        $('#recentre').on("click", function () {
+                            nbmap.map.setCenter({ lat: driverlat, lng: driverlng });
+                            setTimeout(function () {
+                                nbmap.map.setZoom(15);
+                            }, 50000);
+                        });
+
+                        // function drawCarMarkerOnPolyline(hi) {
+
+
+
+                        //     removePolyline();
+                        //     var offset = 0; //intial offset value
+                        //     var w = 14, h = 33;
+                        //     //Polyline css
+                        //     var linecss = {
+                        //         color: 'transparent',
+                        //         weight: 3,
+                        //         opacity: 1
+                        //     };
+                        //     line = L.polyline(pp, linecss).addTo(map); //add polyline on map
+                        //     decorator = L.polylineDecorator(line).addTo(map);
+                        //     //create a polyline decorator instance.
+
+                        //     //offset and repeat can be each defined as a number,in pixels,or in percentage of the line's length,as a string 
+                        //     interval = window.setInterval(function () {
+                        //         decorator.setPatterns([{
+                        //             offset: offset + '%', //Offset value for first pattern symbol,from the start point of the line. Default is 0.
+                        //             repeat: 0, //repeat pattern at every x offset. 0 means no repeat.
+                        //             //Symbol type.
+                        //             symbol: L.Symbol.marker({
+                        //                 rotate: true, //move marker along the line. false value may cause the custom marker to shift away from a curved polyline. Default is false. 
+                        //                 markerOptions: {
+                        //                     icon: L.icon({
+                        //                         iconUrl: 'images/car.png',
+                        //                         iconAnchor: [w / 2, h / 2], //Handles the marker anchor point. For a correct anchor point [ImageWidth/2,ImageHeight/2]
+                        //                         iconSize: [14, 33]
+                        //                     })
+                        //                 }
+                        //             })
+                        //         }
+                        //         ]);
+                        //         if ((offset += 0.33) > 100) //Sets offset. Smaller the value smoother the movement.
+                        //         {//offset = 0;
+                        //         }
+                        //     }, 10); //Time in ms. Increases/decreases the speed of the marker movement on decrement/increment of 1 respectively. values should not be less than 1.
+                        //     poly.push(line);
+                        //     poly.push(decorator);
+
+                        //     // map.fitBounds(line.getBounds());
+                        //     setInterval(function () {
+                        //         if (pp.length < 3) {
+                        //             if (myTrackingStatus != "De-Boarded") {
+                        //                 hi2();
+                        //             }
+
+
+                        //         }
+
+                        //     }, 15000);
+
+                        //     function hi2() {
+                        //         $.ajax({
+                        //             type: "POST",
+                        //             username: "user1",
+                        //             password: "Acc@bang10",
+                        //             url: URL_GetGPSLogger,
+                        //             data: "{deviceId: '" + routeid + "',vendorid:'0'}",
+                        //             crossDomain: true,
+                        //             contentType: "application/json; charset=utf-8",
+                        //             dataType: "json",
+                        //             success: OnSuccess6,
+                        //             error: OnError6
+                        //         });
+
+                        //         function OnSuccess6(data, status) {
+
+                        //             $.each(JSON.parse(data), function (key, val) {
+                        //                 console.log(val.lat);
+                        //                 var lat = val.lat;
+                        //                 var lng = val.lng;
+                        //                 var latlng = [];
+                        //                 latlng.push(lat);
+                        //                 latlng.push(lng);
+                        //                 var lnglat = [];
+                        //                 lnglat.push(lng);
+                        //                 lnglat.push(lat);
+                        //                 fromloc = lnglat;
+                        //                 map.panTo(pp[0]);
+
+
+                        //                 if (latlng[0] != pp[pp.length - 1][0]) {
+                        //                     pp.push(latlng);
+                        //                     pp.shift();
+                        //                     drawCarMarkerOnPolyline();
+                        //                 }
+                        //             });
+                        //         }
+
+                        //         function OnError6(request, status, error) {
+                        //             //      $("#output").html(request.statusText);
+
+
+                        //         }
+                        //     }
+
+                        // }
+
+                        // var removePolyline = function () {
+                        //     var polylength = poly.length;
+                        //     if (polylength > 0) {
+                        //         for (var i = 0; i < polylength; i++) {
+                        //             if (poly[i] !== undefined) {
+                        //                 map.removeLayer(poly[i]);
+                        //             }
+                        //         }
+                        //         poly = new Array();
+                        //         window.clearInterval(interval);
+                        //     }
+                        // }
+
+
+                        function ShowMap() {
+                            (function () {
+                                nextbillion.setApiKey("88db710a74e44bf59a27b365912e06bb");
+                                nbmap = new nextbillion.maps.Map({
+                                    container: document.getElementById("map"),
+                                    // https://api.nextbillion.io/maps/streets/style.json
+                                    style: "https://api.nextbillion.io/maps/openstreetmap/style.json",
+                                    zoom: 15,
+                                    center: { lat: driverlat, lng: driverlng },
+                                });
+                                var nav = new nextbillion.maps.NavigationControl();
+                                //Add control adds zoom in, zoom out and navigate button provided by the nb map
+                                //nbmap.map.addControl(nav, 'bottom-left');
+                                nbmap.on("load", function () {
+                                    addCustomMarkerWithDom(nbmap);
+                                });
+                            })();
+                        }
+
+                        function addCustomMarkerWithDom(nbmap) {
+                            const popup = new nextbillion.maps.Popup({
+                                offset: 10,
+                                closeButton: false
+                            }).setText("Your Cab");
+                            const elDriver = document.createElement("div");
+                            elDriver.className = "marker";
+                            elDriver.style.backgroundImage =
+                                "url('car.png')";
+                            elDriver.style.backgroundSize = "cover";
+                            elDriver.style.width = "25px";
+                            elDriver.style.height = "25px";
+                            const marker = new nextbillion.maps.Marker({
+                                element: elDriver
+                            })
+                                .setLngLat({ lat: driverlat, lng: driverlng })
+                                //.setPopup(popup)
+                                .addTo(nbmap.map);
+
+                            marker.togglePopup(popup);
+
+                            //custom marker for showing home on the map
+                            const elEmployee = document.createElement("div");
+                            elEmployee.className = "employeeMarker";
+                            elEmployee.style.backgroundImage =
+                                "url('home.png')";
+                            elEmployee.style.backgroundSize = "cover";
+                            elEmployee.style.width = "30px";
+                            elEmployee.style.height = "30px";
+                            const employeeMarker = new nextbillion.maps.Marker({
+                                element: elEmployee
+                            })
+                                .setLngLat({ lat: emplatlng1.lat, lng: emplatlng1.lng })
+                                //.setPopup(popup)
+                                .addTo(nbmap.map);
+
+                            marker.togglePopup(popup);
+
+                            // dynamicInterval1();
+
+                            setInterval(function () {
+                                $.ajax({
+                                    type: "POST",
+                                    username: "user1",
+                                    password: "Acc@bang10",
+                                    url: URL_GetGPSLogger,
+                                    data: "{deviceId: '" + routeid + "',vendorid:'0'}",
+                                    crossDomain: true,
+                                    contentType: "application/json; charset=utf-8",
+                                    dataType: "json",
+                                    success: OnSuccess5,
+                                    error: OnError5
+                                });
+
+                                function OnSuccess5(data, status) {
+                                    $.each(JSON.parse(data), function (key, val) {
+                                        driverlat = val.lat;
+                                        driverlng = val.lng;
+                                        var lnglat = [];
+                                        lnglat.push(driverlat);
+                                        lnglat.push(driverlng);
+                                        fromloc = lnglat;
+                                        transition();
+                                        nbmap.map.setCenter({ lat: driverlat, lng: driverlng });
+                                    });
+                                }
+                                function OnError5(request, status, error) {
+                                }
+                            }, 5000);
+
+                            var numDeltas = 200;
+                            var delay = 10; //milliseconds
+                            var i = 0;
+                            var deltaLat;
+                            var deltaLng;
+                            function transition() {
+                                i = 0;
+                                deltaLat = (driverlat - position[0]) / numDeltas;
+                                deltaLng = (driverlng - position[1]) / numDeltas;
+                                var p1 = turf.point([position[1], position[0]]);
+                                var p2 = turf.point([driverlng, driverlat]);
+                                var bearing = turf.bearing(p1, p2);
+                                marker.setRotation(bearing + 90);
+                                console.log("transition");
+                                moveMarker();
+                            }
+
+                            function moveMarker() {
+                                position[0] += deltaLat;
+                                position[1] += deltaLng;
+                                marker.setLngLat({ lat: position[0], lng: position[1] })
+                                if (i != numDeltas) {
+                                    i++;
+                                    setTimeout(moveMarker, delay);
+                                }
+                            }
+                        }
+
+                    }
+                    function err1(request, status, error) {
+                        console.log('ERROR')
+                    }
+                });
+            }
+
+            function OnError3(request, status, error) {
+                //      $("#output").html(request.statusText);
+                $("#loader").hide();
+                $("#output").empty();
+                $("#output").html(request.statusText);
+            }
+        }
+
+        else {
+            $("#loader").hide();
+            $("#output").empty();
+            $("#output").html("Incorrect Parameters");
+
+        }
+
+        locupdate = setInterval(function () { //Iterative call for marker movement, as well as the interval
+            Routedet();
+        }, 4000);
+
+        function Routedet() {
+            $.ajax({
+                type: "POST",
+                username: "user1",
+                password: "Acc@bang10",
+                url: URL_RouteDetail,
+                data: "{RouteID: '" + routeid + "',flag:'3'}",
+                data: "{RouteID: '" + routeid + "',flag:'" + b2bflag + "'}",
+                crossDomain: true,
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: sucess1,
+                error: err1
+            });
+
+            function sucess1(data, status) {
+                $.each(JSON.parse(data), function (key, val) {
+                    if (val.id == empid) {
+                        employeeid = val.employeeID;
+                        gender = val.Gender;
+                        console.log(val.CabNoShow);
+                        if ((val.CabNoShow == 0) && (clientid == '10' || clientid == '14' || clientid == '15' || clientid == '22')) {
+                            $('#cabnoshow').show();
+                        }
+                        else {
+                            $('#cabnoshow').hide();
+                        }
+                        if (val.tripType == 'D') {
+                            $('#cabnoshow').hide();
+                        }
+
+                        if (clientid == '10' || clientid == '14' || clientid == '15'  || clientid == '22') {
+                            //|| clientid == '25' removed for the time being.
+                            $("#sharebut").show();
+                        }
+                        else {
+                            $("#sharebut").hide();
+                        }
+
+                        myTrackingStatus = val.trackingStatus
+                        if (myTrackingStatus != '----') {
+                            $("#boarding_status").show();
+                            document.getElementById('boarding_status').innerHTML = '<strong >' + myTrackingStatus.toUpperCase() + '</strong>';
+
+                        } else {
+                            //document.getElementById('boarding_status').innerHTML = '<strong></strong>';
+                            $("#boarding_status").hide();
+
+
+                        }
+
+                        OTP = val.boardingOTP;
+                        if (OTP != '') {
+                            document.getElementById('Otp').innerHTML = '<strong>OTP:  </strong>' + ' ' + OTP;
+                        }
+
+                        if (myTrackingStatus == "No-Show") {
+                            var call_btn = document.getElementById('call_btn');
+                            call_btn.style.display = 'none';
+                            var help_btn = document.getElementById('help_btn');
+                            help_btn.style.display = 'inherit';
+                            var call_action = document.getElementById('call_action');
+                            call_action.style.alignItems = 'center';
+                            call_action.style.justifyContent = 'center';
+                            call_action.style.textAlign = 'center';
+                            var selfnoshow_btn = document.getElementById('selfNoShowButton');
+                            selfnoshow_btn.style.display = 'none';
+                            $("#Otp").hide();
+                            $("#call_btn").hide();
+                            $("#chat").hide();
+                            // $("#boarding_status").hide();
+
+                            clearInterval(etainterval);
+
+                            $('#eta_div').hide();
+                            $("#Otp").hide();
+                            clearInterval(locupdate);
+                            $('#chatBox').offcanvas('hide');
+
+                        } else if (myTrackingStatus == "Boarded" || val.tripType == 'D') {
+                            var call_btn = document.getElementById('call_btn');
+                            call_btn.style.display = 'none';
+                            var selfnoshow_btn = document.getElementById('selfNoShowButton');
+                            selfnoshow_btn.style.display = 'none';
+                            var help_btn = document.getElementById('help_btn');
+                            help_btn.style.display = 'inherit';
+                            var call_action = document.getElementById('call_action');
+                            call_action.style.alignItems = 'center';
+                            call_action.style.justifyContent = 'center';
+                            call_action.style.textAlign = 'center';
+                            $('#cabnoshow').hide();
+                            $("#Otp").hide();
+                            $("#chat").hide();
+                            //$("#boarding_status").hide();
+                            $('#eta_div').hide();
+                            $("#Otp").hide();
+                            clearInterval(etainterval);
+
+                            clearInterval(locupdate);
+                            $('#offcanvasBottom').offcanvas('hide');
+                            $('#offcanvasExample').offcanvas('hide');
+                            $('#chatBox').offcanvas('hide');
+
+                        }
+                        else if (myTrackingStatus == "De-Boarded" || val.tripType == 'D') {
+                            var call_btn = document.getElementById('call_btn');
+                            call_btn.style.display = 'none';
+                            var help_btn = document.getElementById('help_btn');
+                            help_btn.style.display = 'inherit';
+                            var call_action = document.getElementById('call_action');
+                            call_action.style.alignItems = 'center';
+                            call_action.style.justifyContent = 'center';
+                            call_action.style.textAlign = 'center';
+                            $('#cabnoshow').hide();
+                            $("#Otp").hide();
+                            $("#chat").hide();
+                            //$("#boarding_status").hide();
+                            $('#eta_div').hide();
+                            $("#Otp").hide();
+                            clearInterval(etainterval);
+                            $("#sharebut").hide();
+
+                            clearInterval(locupdate);
+                            $('#offcanvasBottom').offcanvas('hide');
+                            $('#offcanvas').offcanvas('hide');
+                            $('#chatBox').offcanvas('hide');
+                            var selfnoshow_btn = document.getElementById('selfNoShowButton');
+                            selfnoshow_btn.style.display = 'none';
+                        }
+
+                        else {
+                        }
+
+                        if (value1 == 's') {
+                            var call_btn = document.getElementById('call_btn');
+                            call_btn.style.display = 'none';
+                            var help_btn = document.getElementById('help_btn');
+                            help_btn.style.display = 'inherit';
+                            $("#Otp").hide();
+                            //$("#boarding_status").hide();
+
+                            clearInterval(etainterval);
+
+                            $('#eta_div').hide();
+                            $("#Otp").hide();
+                            $("#cabnoshow").hide();
+                            $("#sharebut").hide();
+                            $('#hamburgernav').hide();
+
+                            $('#call_action').hide();
+                            const element = document.getElementById("call_action");
+
+                            // Check if the element exists and hide it
+                            if (element) {
+                                element.style.display = "none";
+                            }
+                        }
+
+                        var aTag = document.getElementById('aTag');
+                        aTag.setAttribute('data-rel', 'external');
+                        aTag.setAttribute('href', 'tel:' + tptContactNo[0]);
+
+                    }
+
+                });
+
+            }
+
+            function err1(request, status, error) {
+                console.log('ERROR')
+
+            }
+        }
+
+
+        // function sendMessage() {
+        //     const messageInput = document.getElementById('message-input');
+        //     messageInput.addEventListener("input", function () {
+        //         const maxLength = 20;
+        //         const text = messageInput.value;
+        //         const wrappedTextContent = "";
+
+        //         if (text.length > maxLength) {
+        //             const wrappedLines = Math.ceil(text.length / maxLength);
+        //             for (let i = 0; i < wrappedLines; i++) {
+        //                 wrappedTextContent += text.substr(i * maxLength, maxLength) + "<br>";
+        //             }
+        //         }
+        //         else {
+
+        //         }
+        //     });
+        //     const message = wrappedTextContent;
+
+        //     // Here, you can implement the logic to send the message
+        //     // For this example, we'll just log the message to the console
+        //     console.log('Message sent:', message);
+
+        //     //Clear the input field after sending the message
+        //     messageInput.value = '';
+        // }
+
+
+        // const messageInput = document.getElementById('send-button');
+
+        // messageInput.addEventListener('keyup', function (event) {
+        //     if (event.key === 'Enter') {
+        //         event.preventDefault(); // Prevent the default Enter key behavior (e.g., line break)
+        //         sendMessage(); // Call the sendMessage() function
+        //     }
+        // });
+
+        // function displayRedDot() {
+        //     var iconContainer = document.getElementById('iconContainer');
+        //     if (iconContainer) {
+        //         iconContainer.classList.toggle('red-dot-visible');
+        //     }
+        // }
+
+        // var iconContainer = document.getElementById('iconContainer');
+        // if (iconContainer) {
+        //     iconContainer.addEventListener('click', displayRedDot);
+        // }
+
+        // function playNotificationSound() {
+        //     // Create an Audio object
+        //     var notificationSound = new Audio('images/notificationSound2.mp3');
+
+        //     // Play the notification sound
+        //     notificationSound.play();
+        // }
+
+        // function scrollToBottom() {
+        //     const chatContainer = document.getElementById("chat-messages");
+        //     chatContainer.scrollBottom = chatContainer.scrollHeight;
+        //     console.log("scrollToBottom");
+        // }
+
+        function validateInput(inputElement) {
+            // Define a regular expression to match emojis
+            var emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+
+            // Check if the input contains emojis
+            if (emojiRegex.test(inputElement.value)) {
+                alert('Emojis are not allowed in the input!');
+                // Remove emojis from the input
+                inputElement.value = inputElement.value.replace(emojiRegex, '');
+            }
+        }
+
+        setTimeout(function () {
+
+            // const shareLocationButton = document.getElementById("shareLocation");
+            // shareLocationButton.addEventListener("click", () => {
+            //     if ("geolocation" in navigator) {
+            //         navigator.geolocation.getCurrentPosition(function (position) {
+            //             const latitude = position.coords.latitude;
+            //             const longitude = position.coords.longitude;
+
+            //             const geoLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+            //             var message = geoLink
+            //             const messageText = message;
+            //             if (messageText !== '') {
+            //                 const newMessageRef = database.ref(`chats/trips/${routeID}/messages`).push();
+            //                 newMessageRef.set({
+            //                     sender: currentUserID,
+            //                     receiver: driverID,
+            //                     content: messageText,
+            //                     timestamp: firebase.database.ServerValue.TIMESTAMP
+            //                 });
+            //                 console.log(':::>' + driverFCMToken);
+            //                 sendPushNotification(driverFCMToken, messageText);
+            //             }
+            //             messageElement.appendChild(messageText);
+            //             window.open(geoLink, "_blank")
+            //         }, function (error) {
+            //             alert(`Error getting location: $(error.message)`);
+            //         });
+            //     } else {
+            //         alert("Geolocation is not supported in this browser.");
+            //     }
+            // });
+
+            const tabs = document.querySelectorAll(".scrollable-tabs-container a");
+            const rightArrow = document.querySelector(
+                ".scrollable-tabs-container .right-arrow svg"
+            );
+            const leftArrow = document.querySelector(
+                ".scrollable-tabs-container .left-arrow svg"
+            );
+            const tabsList = document.querySelector(".scrollable-tabs-container ul");
+            const leftArrowContainer = document.querySelector(
+                ".scrollable-tabs-container .left-arrow"
+            );
+            const rightArrowContainer = document.querySelector(
+                ".scrollable-tabs-container .right-arrow"
+            );
+
+            const removeAllActiveClasses = () => {
+                tabs.forEach((tab) => {
+                    tab.classList.remove("active");
+                });
+            };
+
+            tabs.forEach((tab) => {
+                tab.addEventListener("click", () => {
+                    removeAllActiveClasses();
+                    tab.classList.add("active");
+                });
+            });
+
+            const manageIcons = () => {
+                if (tabsList.scrollLeft >= 20) {
+                    leftArrowContainer.classList.add("active");
+                } else {
+                    leftArrowContainer.classList.remove("active");
+                }
+
+                let maxScrollValue = tabsList.scrollWidth - tabsList.clientWidth - 20;
+                //console.log("scroll width: ", tabsList.scrollWidth);
+                //console.log("client width: ", tabsList.clientWidth);
+
+                if (tabsList.scrollLeft >= maxScrollValue) {
+                    rightArrowContainer.classList.remove("active");
+                } else {
+                    rightArrowContainer.classList.add("active");
+                }
+            };
+
+            rightArrow.addEventListener("click", () => {
+                tabsList.scrollLeft += 200;
+                manageIcons();
+            });
+
+            leftArrow.addEventListener("click", () => {
+                tabsList.scrollLeft -= 200;
+                manageIcons();
+            });
+
+            tabsList.addEventListener("scroll", manageIcons);
+
+            let dragging = false;
+
+            const drag = (e) => {
+                if (!dragging) return;
+                tabsList.classList.add("dragging");
+                tabsList.scrollLeft -= e.movementX;
+            };
+
+            tabsList.addEventListener("mousedown", () => {
+                dragging = true;
+            });
+
+            tabsList.addEventListener("mousemove", drag);
+
+            document.addEventListener("mouseup", () => {
+                dragging = false;
+                tabsList.classList.remove("dragging");
+            });
+
+            var messageElement1 = document.getElementById('chat-messages1');
+            $.ajax({
+                url: 'https://www.etmsdrive.in/appControlRest/api/v1/application/chat/22/0',
+                method: 'GET',
+                success: OnSuccess,
+                error: onError
+            });
+            function OnSuccess(response) {
+                const parsedData = JSON.parse(response);
+                const messageInput = document.getElementById("message-input");
+                //const parent = document.getElementById('chat-messages1-div');
+                const list = document.querySelector('#chat-messages1');
+                for (let i = 0; i < parsedData.length; i++) {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = "#";
+                    a.textContent = parsedData[i].text;
+                    li.addEventListener("click", function () {
+                        //alert("You clicked: " + li.textContent);
+                        const messageText = li.textContent;
+                        if (messageText !== '') {
+                            messageInput.value = messageText;
+                        }
+                        // if (messageText !== '') {
+                        //     const newMessageRef = database.ref(`chats/trips/${routeID}/messages`).push();
+                        //     newMessageRef.set({
+                        //         sender: currentUserID,
+                        //         receiver: driverID,
+                        //         content: messageText,
+                        //         timestamp: firebase.database.ServerValue.TIMESTAMP
+
+                        //     });
+                        //     console.log(':::>' + driverFCMToken);
+                        //     sendPushNotification(driverFCMToken, messageText);
+                        // }
+                    });
+                    li.appendChild(a);
+                    list.appendChild(li);
+                }
+                // Process the parsed data here 
+                //messageElement1.appendChild(list);
+            };
+            function onError(xhr, status, error) {
+                // Handle any errors 
+            }
+            // Chat feature
+
+            // Initialize Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyA09UwnVN0gTIHXjZokBBBXCEGyWrZ9rBk",
+                authDomain: "etmsdrive-89370.firebaseapp.com",
+                databaseURL: "https://etmsdrive-89370.firebaseio.com/",
+                projectId: "etmsdrive-89370",
+                storageBucket: "etmsdrive-89370.appspot.com",
+                messagingSenderId: "351746301370",
+                appId: "1:351746301370:android:361973f28e3375bc"
+            };
+            let isNewMessage = false;
+            // Get the URL parameters
+            //const urlParams = new URLSearchParams(window.location.search);
+
+            // Get the values using the parameter names
+            var _routeId = routeid;
+            var _driverNo = driver_contact1;
+            var _empName = emp_contact;
+
+            console.log('Route ID:', _routeId);
+            console.log('Driver Number:', _driverNo);
+            console.log('Employee Number:', _empName);
+
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+
+            if (firebase.messaging.isSupported()) {
+                const messaging = firebase.messaging();
+
+                if ("serviceWorker" in navigator) {
+                    navigator.serviceWorker
+                        .register("/firebase-messaging-sw.js") // Path to your firebase-messaging-sw.js file
+                        .then((registration) => {
+                            messaging.useServiceWorker(registration); // Associate service worker with messaging instance
+                        })
+                        .catch((error) => {
+                            console.error("Service Worker registration failed:", error);
+                        });
+                }
+
+                messaging.requestPermission()
+                    .then(() => {
+                        return messaging.getToken();
+                    })
+                    .then(token => {
+                        console.log('FCM Token:', token);
+
+                    }).catch((error) => {
+                        console.log('Error requesting permission:', error);
+                    });
+
+                messaging.onMessage(function (message) {
+                    console.log("onMessage event fired", message);
+                });
+            }
+
+
+
+
+
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-button');
+            const chatMessages = document.getElementById('chat-messages');
+
+            const routeID = _routeId;//'223523R0002';
+            const driverID = _driverNo;//'9810025215';
+            const currentUserID = _empName;
+            const currentEmployeeId =  //'Anurag singh'; 
+            console.log(driverID);
+            console.log(currentUserID);
+            //const empMobile = _empMobile;//1234567890
+            var driverFCMToken;
+
+
+
+
+            // const messagesRef = database.ref(`chats/trips/${routeID}/messages`); 
+            // messagesRef.once("value")
+            // .then(function(snapshot) {
+            //   var data = snapshot.val();
+            //   console.log(data); // Log the retrieved data
+            //   const uniqueSenders = {};
+
+
+            //   for (const key in data) {
+            //       const driverFCMToken = data[key].driverFCMToken;
+            //       if (driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken.trim() !== '') {
+            //           uniqueSenders[driverFCMToken] = true;
+            //       }
+            //   }
+            //   driverToken = Object.keys(uniqueSenders).join(', ');
+            //   console.log(driverToken);
+            // })
+            // .catch(function(error) {
+            //   console.error("Error fetching data:", error);
+            // });
+
+            // Assuming you have the routeID from somewhere
+
+            const messagesRef = database.ref(`chats/trips/${routeID}`);
+
+            messagesRef.once("value")
+                .then(function (snapshot) {
+                    const tripData = snapshot.val();
+                    if (tripData) {
+                        driverFCMToken = tripData.driverFCMToken;
+                        if (driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken.trim() !== '') {
+                            console.log("Driver's FCM Token:", driverFCMToken);
+
+
+                        } else {
+                            console.log("Driver's FCM Token is not available or invalid.");
+                        }
+                    } else {
+                        console.log("Trip data not found.");
+                    }
+                })
+                .catch(function (error) {
+                    console.error("Error fetching trip data:", error);
+                });
+
+            messageInput.addEventListener('keyup', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    const messageText = messageInput.value.trim();
+                    if(driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken !== ''){
+                        if (messageText !== '') {
+                            const newMessageRef = database.ref(`chats/trips/${routeID}/messages`).push();
+                            newMessageRef.set({
+                                sender: currentUserID,
+                                receiver: driverID,
+                                content: messageText,
+                                is_read: false,
+                                timestamp: firebase.database.ServerValue.TIMESTAMP
+
+                            });
+                            const tokenReference = database.ref(`chats/trips/${routeID}`);
+                            tokenReference.once("value").then(function(snapshot){
+                            const tripData = snapshot.val();
+                            if(tripData){
+                                driverFCMToken = tripData.driverFCMToken;
+                                if (driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken.trim() !== '') {
+                                    console.log(':::>' + driverFCMToken);
+                                    sendPushNotification(driverFCMToken, messageText);
+                                    messageInput.value = '';
+                                }
+                            }
+
+                        })
+                            // console.log(':::>' + driverFCMToken);
+                            // sendPushNotification(driverFCMToken, messageText);
+                            // messageInput.value = '';
+                        }
+                    }  
+                }
+            });
+
+            sendButton.addEventListener('click', () => {
+                // scrollToBottom();
+                const messageText = messageInput.value.trim();                
+                    if (messageText !== '') {
+                        const newMessageRef = database.ref(`chats/trips/${routeID}/messages`).push();
+                        newMessageRef.set({
+                            sender: currentUserID,
+                            receiver: driverID,
+                            content: messageText,
+                            is_read: false,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+
+                        });
+                        const tokenReference = database.ref(`chats/trips/${routeID}`);
+                        tokenReference.once("value").then(function(snapshot){
+                            const tripData = snapshot.val();
+                            if(tripData){
+                                driverFCMToken = tripData.driverFCMToken;
+                                if (driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken.trim() !== '') {
+                                    console.log(':::>' + driverFCMToken);
+                                    sendPushNotification(driverFCMToken, messageText);
+                                    messageInput.value = '';
+                                }
+                            }
+
+                        })
+                        // console.log(':::>' + driverFCMToken);
+                        // sendPushNotification(driverFCMToken, messageText);
+                        // messageInput.value = '';
+                    }
+                                
+            });
+
+
+
+            database.ref(`chats/trips/${routeID}/messages`).on('child_added', snapshot => {
+                const message = snapshot.val();
+
+                if (message.receiver === currentUserID) {
+                    //displayRedDot();
+                    //playNotificationSound();
+
+                }
+
+                if (message.sender === currentUserID || message.receiver === currentUserID) {
+                    console.log("this_user_message" + message);
+                    const messageElement = document.createElement('div');
+                    const messageContent = document.createElement('div');
+                    const timestampElement = document.createElement('div');
+                    messageContent.innerText = message.content;
+                    const timestamp = new Date(message.timestamp);
+                    const formattedTime = timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+                    timestampElement.classList.add('timestamp');
+                    timestampElement.innerText = formattedTime;
+
+                    // Determine message alignment based on sender
+                    messageElement.appendChild(messageContent);
+                    messageElement.appendChild(timestampElement);
+
+                    if (message.sender === currentUserID) {
+                        messageElement.classList.add('chats', 'sender');
+                    } else {
+                        // Show notification only for new messages
+                        if (isNewMessage) {
+                            showNotification('New Message', message.content);
+                        }
+                        isNewMessage = true; // Set the flag to true for the next messages
+                        messageElement.classList.add('chats', 'recevier');
+                    }
+                    messageElement.classList.add('animate__animated', 'animate__headShake');
+                    chatMessages.appendChild(messageElement);
+                }
+            });
+
+            database.ref(`chats/trips/${routeID}/messages`).on('child_removed', snapshot => {
+                const messageId = snapshot.key;
+                const messageElementToRemove = document.querySelector(`[data-message-id="${messageId}"]`);
+
+                if (messageElementToRemove) {
+                    messageElementToRemove.remove();
+                }
+            });
+
+            function sendPushNotification(recipientFCMToken, message) {
+                fetch('https://fcm.googleapis.com/fcm/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: 'Bearer AAAAUeW2nbo:APA91bFykoDdjXFrBo4qoRh0SvR7twUvPet-onaHvy29OGV7eJR7uMSaw042aEtC0VAEZmlYUd9eeVNfFz4DuifRAiePprBKf2cE7pHIkF1DZdY5fHG7NDqOazTna5rlFkxUlXrOcEpgtSJPL27-l_QGLlmhutR_Hg', // Replace with your FCM server key
+                    },
+                    body: JSON.stringify({
+                        to: recipientFCMToken,
+                        notification: {
+                            title: 'New Message',
+                            body: message,
+                            click_action: 'your-action-url',
+                        },
+                    }),
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Push notification sent:', data);
+                    })
+                    .catch(error => {
+                        console.error('Error sending push notification:', error);
+                    });
+            }
+
+            function showNotification(title, body) {
+                // Check if the browser supports notifications
+                if (!('Notification' in window)) {
+                    console.log('This browser does not support notifications.');
+                    return;
+                }
+
+                // Check if permission to show notifications has been granted
+                if (Notification.permission === 'granted') {
+                    // Create and show the notification
+                    const notification = new Notification(title, { body });
+                } else if (Notification.permission !== 'denied') {
+                    // If permission is not denied, request permission
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            // Create and show the notification
+                            const notification = new Notification(title, { body });
+                        }
+                    });
+                }
+            }
+
+
+            //Chat Feature
+
+        }, 2000);
+
+
+
+
+
+
+
+
+
+
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="js/custom.js"></script> -->
+
+
+
+
+</body>
+
+</html>

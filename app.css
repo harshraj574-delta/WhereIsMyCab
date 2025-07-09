@@ -1,0 +1,69 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+ }
+
+#map {
+    height: 100%;
+    width: 100%;
+    z-index: 1000;
+    position: absolute;
+    top: 0;
+    left: 0;
+  
+}
+
+#details{
+    position: absolute;
+    width: auto;
+    top: 62%;
+    left: 50%;
+    transform: translate(-50%, 20%);
+    margin: 0 auto;
+    /* background-color: #fff; */
+    border-radius: 5px;
+    z-index: 1001;
+    /* padding: 1rem 1rem .1rem 1rem; */
+    font-size: .8rem;
+}
+
+
+
+
+#iconBoxes{
+    text-align: center;
+}
+
+#iconBoxes span{
+    display: block;
+    /* border: 2px solid grey; */
+}
+#iconBoxes{
+    border-top: 1px solid grey;
+    border-bottom: 1px solid grey;
+    margin-top: .5rem;
+}
+#details img{
+    width: 100%;
+    height: inherit;
+    border: 1px solid grey;
+    border-radius: 100%;
+    /* margin-top: .8rem; */
+}
+
+.border-right{
+    border-right: 1px solid grey;
+}
+
+.fa-clock-o, .fa-phone, .fa-headphones{
+    font-size: 1.3rem !important;
+}
+
+#iconBoxes > div{
+    padding: .5rem 0 .5rem 0;
+}
+#iconBoxes > a{
+    padding: .5rem 0 .5rem 0;
+}

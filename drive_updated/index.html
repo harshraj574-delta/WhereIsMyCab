@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="ScreenOrientation" content="autoRotate:disabled">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <title>eTMS Buddy</title>
+</head>
+<body>
+
+    <!-- <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14009.163673252444!2d77.08022521479566!3d28.62104179652709!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390d04ba6b064d0f%3A0xf609cdf712fe603e!2sJanakpuri%2C%20New%20Delhi%2C%20Delhi!5e0!3m2!1sen!2sin!4v1692686179861!5m2!1sen!2sin" id="googleMap" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe> -->
+
+    <div class="driverBx">
+        <img src="images/logo_icon.svg" class="logo_icon" alt="">
+        <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel" data-bs-interval="false">
+            <!-- <div class="carousel-indicators">
+              <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+              <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1" aria-label="Slide 2"></button>
+            </div> -->
+
+            <div class="reaching bg-dark">
+                <h4><small>Reaching in</small> 7 Mins</h4>
+            </div>
+
+            <div class="carousel-inner">
+              <div class="carousel-item active">
+                <div class="DetalBx">
+                    <div class="imgBx">
+                        <img src="images/driver1.png" alt="">
+                        <!-- <div class="reaching">
+                            <h4><small>Reaching in</small> 7 Mins</h4> 
+                        </div> -->
+                    </div>
+                    <div class="personDetalBx">
+                        <span class="badge rounded-pill driver_badge">Driver</span>
+                        <h2>Shekhar Makhija</h2>
+                        <h3>ERTIGA   |   HR55AD0569</h3>
+                        <span class="badge rounded-pill otp">OTP  7623</span>
+                    </div>
+                </div>
+              </div>
+              <!-- <div class="carousel-item">
+                <div class="DetalBx">
+                    <div class="imgBx">
+                        <img src="images/guard.png" alt="">
+                    </div>
+                    <div class="personDetalBx">
+                        <span class="badge rounded-pill guard_badge">Driver</span>
+                        <h2>Hari Prasad</h2>
+                        <h3>M03EXC0027</h3>
+                    </div>
+                </div>
+              </div> -->
+            </div>
+          </div>
+    </div>
+
+
+    <a href="#!" class="chat" data-bs-toggle="offcanvas" data-bs-target="#chatBox">
+       <img src="images/chat.svg"> Chat with Driver
+    </a>
+
+    <div class="call_action">
+        <div data-bs-toggle="modal" data-bs-target="#noShowModal">
+            <img src="images/no_show.svg" alt="">
+            <small>Self No Show</small>
+        </div>
+        <div>
+            <img src="images/helpdesk.svg" alt="">
+            <small>Call Helpdesk</small>
+        </div>
+        <div>
+            <img src="images/call.svg" alt="">
+            <small>Call Driver</small>
+        </div>
+    </div>
+
+    <!-- Chat Box -->
+    <div class="offcanvas offcanvas-custom offcanvas-bottom" tabindex="-1" id="chatBox" aria-labelledby="offcanvasBottomLabel">
+        <div class="offcanvas-header offcanvas-header-custom">
+          <button type="button" class="btn-left me-3" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+          <div class="d-flex justifiy-content-center align-items-center">
+            <img src="images/avatar.png" alt="">
+            <h5 class="ms-3">Shekhar Makhija <small>ERTIGA | HR5A0569</small></h5>
+          </div>
+        </div>
+        <div class="offcanvas-body small" id="scrollerContent">
+          <div class="chats item recevier">Hi! Shekhar Makhija</div>
+          <div class="chats item recevier">Lorem ipsum dolor sit amet</div>
+          <div class="chats item recevier">Integer tincidunt <small>01:00</small></div>
+          <div class="chats item sender">Aenean commodo ligula eget dolor. </div>
+          <div class="chats item sender">Ok</div>
+          <div class="chats item recevier">Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</div>
+        </div>
+        <div class="offcanvas-footer">
+            <img src="images/mic-btn.png" alt="" id="addItems">
+            <input type="text" class="chatInput" placeholder="Type Message...">
+        </div>
+      </div>
+
+
+    <!-- First Modal -->
+    <div class="modal fade" id="firstModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body">
+          <p>IMPORTANT protocols to follow at Accenture if you are unwell or a close contact of a Coronavirus positive individual.</p>
+
+          <ul class="list my-3">
+            <li>Stay home if you are unwell.</li>
+            <li>Seek medical advice if you have a fever, cold, headache, cough or other flu-like symptoms. Contact ASOC at +91 80 71641777 / 080 69541777 . Inform your supervisor/ HR representative immediately</li>
+            <li>DO NOT return to office until you have been notified through e-mail by your HR Representative that you can do so</li>
+          </ul>
+
+          <p>Regards, India Accenture Workplace Solutions</p>
+
+          <div class="d-grid"><button type="button" class="btn btn-dark btn-cst offWhite mt-4" data-bs-toggle="modal" data-bs-target="#secondModal" data-bs-dismiss="modal">OK</button></div>
+          
+        </div>        
+      </div>
+    </div>
+  </div>
+
+  <!-- Second Modal -->
+  <div class="modal fade" id="secondModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+        <div class="modal-body">
+            
+            <div class="d-block text-center">
+                <p>New Features in eTMS Buddy</p>
+                <img src="images/logo.svg" alt="">
+            </div>
+  
+            <ul class="list">
+                <li><strong class="d-block">Cab users can mark themselves as "no-show" </strong>
+                    If you've missed cancelling your scheduled ride for day, you can now mark yourself as "no-show" on the "Where is my cab" tab. You no longer have to wait for the transport helpdesk to call you.</li>
+                
+                <li><strong class="d-block">Check the boarding status of fellow passengers </strong>
+                    You will now be able to check the boarding status of your fellow passengers under the "cab info" tab. Use this feature to get real-time updates on scheduled pick-ups.</li>
+            </ul>
+  
+            <div class="d-grid"><button type="button" class="btn btn-dark btn-cst mt-4 offWhite" data-bs-dismiss="modal">OK</button></div>
+            
+          </div>
+    </div>
+    </div>
+</div>
+<!-- Second Modal -->
+
+
+ <!-- No Show Modal -->
+ <div class="modal fade" id="noShowModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+        <div class="modal-body">
+            
+            <h5>Confirmation</h5>
+            <h6>Are you really want to confirm your no show for this trip?</h6>
+          
+            <div class="row">
+                <div class="col-6"><button type="button" class="btn w-100 btn-outline-secondary btn-cst" data-bs-dismiss="modal">Cancel</button></div>
+                <div class="col-6"><button type="button" class="btn w-100 btn-danger btn-cst" data-bs-dismiss="modal">OK</button></div>
+            </div>
+            
+          </div>
+    </div>
+    </div>
+</div>
+<!-- No Show Modal -->
+
+    <!-- Script -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/custom.js"></script>
+</body>
+</html>

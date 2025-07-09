@@ -1,0 +1,129 @@
+// Initialize Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyA09UwnVN0gTIHXjZokBBBXCEGyWrZ9rBk",
+    databaseURL: "https://etmsdrive-89370.firebaseio.com/",
+    projectId: "etmsdrive-89370",
+    messagingSenderId:"351746301370",
+    appId: "1:351746301370:android:361973f28e3375bc"
+};
+  
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+  const messaging = firebase.messaging();
+  messaging.requestPermission()
+  .then(() => {
+    return messaging.getToken();
+  })
+  .then(token => {
+    console.log('FCM Token:', token);
+ 
+  })
+  .catch(error => {
+    console.error('Error getting FCM token:', error);
+  });
+
+  const messageInput = document.getElementById('message-input');
+  const sendButton = document.getElementById('send-button');
+  const chatMessages = document.getElementById('chat-messages');  
+  const routeID = '223523R0002';
+  const driverID = '9810025215';
+  const currentUserID = 'Anurag singh'; 
+  var driverToken;
+ 
+
+
+
+  const messagesRef = database.ref(`chats/trips/${routeID}/messages`); 
+  messagesRef.once("value")
+  .then(function(snapshot) {
+    var data = snapshot.val();
+    console.log(data); // Log the retrieved data
+    const uniqueSenders = {};
+
+  
+    for (const key in data) {
+        const driverFCMToken = data[key].driverFCMToken;
+        if (driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken.trim() !== '') {
+            uniqueSenders[driverFCMToken] = true;
+        }
+    }
+    driverToken = Object.keys(uniqueSenders).join(', ');
+    console.log(driverToken);
+  })
+  .catch(function(error) {
+    console.error("Error fetching data:", error);
+  });
+  sendButton.addEventListener('click', () => {
+    const messageText = messageInput.value.trim();
+    if (messageText !== '') {
+      const newMessageRef = messagesRef.push();
+      newMessageRef.set({
+        sender: currentUserID,
+        receiver: driverID,
+        content: messageText,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+        
+      });
+      console.log(':::>'+driverToken);
+      sendPushNotification(driverToken, messageText); 
+      messageInput.value = '';
+    }
+  });
+  
+  messagesRef.on('child_added', snapshot => {
+    const message = snapshot.val();
+    if (message.sender === currentUserID || message.receiver === currentUserID) {
+      const messageElement = document.createElement('div');
+      const messageContent = document.createElement('div');
+      const timestampElement = document.createElement('div');
+      messageContent.innerText = message.content;
+      const timestamp = new Date(message.timestamp);
+      const formattedTime = timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+      timestampElement.classList.add('timestamp');
+      timestampElement.innerText = formattedTime;
+  
+      // Determine message alignment based on sender
+      messageElement.appendChild(messageContent);
+      messageElement.appendChild(timestampElement);
+  
+      if (message.sender === currentUserID) {
+        messageElement.classList.add('message-bubble', 'sent');
+      } else {
+        messageElement.classList.add('message-bubble', 'received');
+      }
+      messageElement.classList.add('animate__animated', 'animate__headShake');
+      chatMessages.appendChild(messageElement);
+    }
+  }); 
+  messagesRef.on('child_removed', snapshot => {
+    const messageId = snapshot.key;
+    const messageElementToRemove = document.querySelector(`[data-message-id="${messageId}"]`);
+    
+    if (messageElementToRemove) {
+      messageElementToRemove.remove();
+    }
+  });
+  function sendPushNotification(recipientFCMToken, message) {
+    fetch('https://fcm.googleapis.com/fcm/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer AAAAUeW2nbo:APA91bFykoDdjXFrBo4qoRh0SvR7twUvPet-onaHvy29OGV7eJR7uMSaw042aEtC0VAEZmlYUd9eeVNfFz4DuifRAiePprBKf2cE7pHIkF1DZdY5fHG7NDqOazTna5rlFkxUlXrOcEpgtSJPL27-l_QGLlmhutR_Hg', // Replace with your FCM server key
+      },
+      body: JSON.stringify({
+        to: recipientFCMToken,
+        notification: {
+          title: 'New Message',
+          body: message,
+          click_action: 'your-action-url',
+        },
+      }),
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Push notification sent:', data);
+      })
+      .catch(error => {
+        console.error('Error sending push notification:', error);
+      });
+  }

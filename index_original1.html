@@ -1,0 +1,2778 @@
+﻿<!DOCTYPE html>
+
+<head>
+    <title>ETMS DRIVE- View Current Location</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="ScreenOrientation" content="autoRotate:disabled">
+    <!-- <meta http-equiv="Cache-control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=EDGE"> -->
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"
+        integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+
+
+    <!--<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins">-->
+
+    <link href="https://maps-gl.nextbillion.io/maps/v2/api/css" rel="stylesheet" />
+
+
+
+    <style>
+        html,
+        body,
+        #map {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        :root {
+            --white: #fff;
+            --primary: #4a36ec;
+            --success: #0baa60;
+            --warning: #fdba0f;
+        }
+
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        button {
+            text-decoration: none;
+        }
+
+        body {
+
+            font-family: PlusJakartaSans;
+            font-stretch: normal;
+            font-style: normal;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        td p {
+            margin: 0;
+        }
+
+        .call_action {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px;
+            padding: 16px 30px;
+            width: calc(100% - 40px);
+            position: fixed;
+            bottom: 0px;
+            border-radius: 16px;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            background-color: rgba(41, 41, 41, 0.6);
+
+        }
+
+        .call_action small {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .call_action a {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .driverBx {
+            top: -10px;
+            width: 92%;
+            position: absolute;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 0 0 0 rgba(31, 22, 95, 0.2), 0 2px 4px 0 rgba(31, 22, 95, 0.2), 0 7px 7px 0 rgba(31, 22, 95, 0.17);
+            background-color: #4a36ec;
+            border: solid 1px #4a36ec;
+            border-radius: 24px;
+            border-bottom-left-radius: 0;
+            margin: 20px;
+        }
+
+        .DetalBx {
+            display: flex;
+            justify-content: start;
+            align-items: start;
+        }
+
+        .personDetalBx {
+            padding: 10px 0 0 16px;
+        }
+
+        .personDetalBx h2 {
+            font-size: 21px;
+            font-weight: 600;
+            color: var(--white);
+            margin: 10px 0;
+        }
+
+        .personDetalBx h3 {
+            font-size: 13px;
+            font-weight: normal;
+            color: var(--white);
+        }
+
+        .personDetalBx td {
+            font-size: 13px;
+            font-weight: normal;
+            color: var(--white);
+        }
+
+        .personDetalBx .otp {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--white);
+            background: var(--success);
+            margin-top: 10px;
+        }
+
+        .driver_badge {
+            background: #ebe7ff;
+            color: var(--primary);
+        }
+
+        .guard_badge {
+            background: var(--warning);
+            color: var(--primary);
+        }
+
+        /* .carousel-inner{ overflow-y: visible; overflow-x: hidden !important;} */
+        .carousel-indicators {
+            margin-bottom: 4px;
+            border-radius: 8px;
+        }
+
+        .carousel-indicators [data-bs-target] {
+            width: 8px;
+            height: 8px;
+            border: 0;
+            border-radius: 8px;
+        }
+
+        .logo_icon {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+        }
+
+        .imgBx {
+            position: relative;
+        }
+
+        .imgBx .reaching {
+            position: absolute;
+            bottom: -52px;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            background: #1c1d20;
+            width: 100%;
+            height: 52px;
+            padding-left: 18px;
+            display: flex;
+            align-items: center;
+        }
+
+        .imgBx .reaching h4 {
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .imgBx .reaching h4 small {
+            font-size: 11px;
+            font-weight: 500;
+            color: #fff;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+
+        .reaching {
+            position: absolute;
+            bottom: -52px;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            width: 110px;
+            height: 52px;
+            padding-left: 18px;
+            display: flex;
+            align-items: center;
+        }
+
+        .reaching h4 {
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .reaching h4 small {
+            font-size: 11px;
+            font-weight: 500;
+            color: #fff;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .chat {
+            background-color: var(--warning);
+            border-top-left-radius: 22px;
+            border-bottom-left-radius: 22px;
+            position: absolute;
+            bottom: 200px;
+            right: 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1c1d20;
+            padding: 12px 14px;
+        }
+
+
+        .modal-backdrop.show {
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            background-color: rgba(28, 29, 32, 0.2);
+            opacity: 1;
+        }
+
+        .modal-content {
+            border-radius: 24px;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-body p {
+            font-size: 16px;
+            font-weight: 600;
+            color: #545557;
+        }
+
+        .modal-body h5 {
+            font-size: 21px;
+            font-weight: 500;
+            color: #1c1d20;
+            margin-bottom: 18px;
+        }
+
+        .modal-body h6 {
+            font-size: 16px;
+            font-weight: 500;
+            color: #545557;
+            margin-bottom: 36px;
+            line-height: 26px;
+        }
+
+
+        .list li {
+            font-size: 16px;
+            font-weight: 500;
+            color: #545557;
+            padding: 10px 0;
+        }
+
+        .btn-cst {
+            height: 58px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .offWhite {
+            color: #f9f9f9;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-evenly;
+        }
+
+        .bg-dark {
+            background: #0baa60 !important;
+        }
+
+        .bg-success {
+            background: var(--success) !important;
+        }
+
+
+        /* button {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        } */
+
+        /* .DetalBx {
+            display: flex;
+            justify-content: start;
+            align-items: start;
+        } */
+
+        /* .personDetalBx {
+            padding: 10px 0 0 16px;
+
+        }
+
+
+        .personDetalBx h2 {
+            font-size: 21px;
+            font-weight: 600;
+            color: var(--white);
+            margin: 10px 0;
+        }
+
+        .personDetalBx h3 {
+            font-size: 13px;
+            font-weight: normal;
+            color: var(--white);
+        }
+
+        .personDetalBx td {
+            font-size: 13px;
+            font-weight: normal;
+            color: var(--white);
+        } */
+
+        /* .personDetalBx .otp {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            background: #0baa60;
+            margin-top: 10px;
+        } */
+
+        /* .driver_badge {
+            background: #ebe7ff;
+            color: #4a36ec;
+        }
+
+        .guard_badge {
+            background: var(--warning);
+            color: var(--primary);
+        } */
+
+        /* .logo_icon {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+        } */
+
+        /* .imgBx {
+            position: relative;
+        } */
+
+        /* .imgBx .reaching {
+            position: absolute;
+            bottom: -52px;
+            border-bottom-left-radius: 24px;
+            border-bottom-right-radius: 24px;
+            background: #1c1d20;
+            width: 100%;
+            height: 52px;
+            padding-left: 18px;
+            display: flex;
+            align-items: center;
+        }
+
+        .imgBx .reaching h4 {
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .imgBx .reaching h4 small {
+            font-size: 11px;
+            font-weight: 500;
+            color: #fff;
+            display: block;
+            margin-bottom: 6px;
+        } */
+
+        /* .carousel-item {
+            position: relative;
+            display: none;
+            float: left;
+            width: 100%;
+            margin-right: -100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            transition: transform 0.6s ease-in-out;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .carousel-item {
+                transition: none;
+            }
+        }
+
+        .carousel-item-next,
+        .carousel-item-prev,
+        .carousel-item.active {
+            display: block;
+        }
+
+        .active.carousel-item-end,
+        .carousel-item-next:not(.carousel-item-start) {
+            transform: translateX(100%);
+        }
+
+        .active.carousel-item-start,
+        .carousel-item-prev:not(.carousel-item-end) {
+            transform: translateX(-100%);
+        }
+
+        .carousel-fade .carousel-item {
+            opacity: 0;
+            transition-property: opacity;
+            transform: none;
+        }
+
+        .carousel-fade .carousel-item-next.carousel-item-start,
+        .carousel-fade .carousel-item-prev.carousel-item-end,
+        .carousel-fade .carousel-item.active {
+            z-index: 1;
+            opacity: 1;
+        }
+
+        .carousel-fade .active.carousel-item-end,
+        .carousel-fade .active.carousel-item-start {
+            z-index: 0;
+            opacity: 0;
+            transition: opacity 0s 0.6s;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .carousel-fade .active.carousel-item-end,
+            .carousel-fade .active.carousel-item-start {
+                transition: none;
+            }
+        } */
+
+        /* Styles for badges */
+        .badge {
+            display: inline-block;
+            padding: 0.35em 0.65em;
+            font-size: 0.75em;
+            font-weight: 700;
+            line-height: 1;
+            color: #4a36ec;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.25rem;
+        }
+
+        .badge:empty {
+            display: none;
+        }
+
+        /* Styles for badges within buttons */
+        .btn .badge {
+            position: relative;
+            top: -1px;
+        }
+
+        /* Styles for alerts */
+        .alert {
+            position: relative;
+            padding: 1rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+        }
+
+        /* Styles for rounded pills (circular shape) */
+        /* .rounded-pill {
+            border-radius: 50rem !important;
+        } */
+
+        /* Styles for rounded tops */
+        /* .rounded-top {
+            border-top-left-radius: 0.25rem !important;
+            border-top-right-radius: 0.25rem !important;
+        } */
+
+
+        /* modal-dialog-centered {
+            display: flex;
+            align-items: center;
+            min-height: calc(100% - 1rem)
+        } */
+
+
+
+
+        /* .modal-dialog {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 2%;
+            left: 30%;
+            transform: translate(-50%, -50%);
+            width: auto;
+            margin: .5rem;
+            pointer-events: none
+        } */
+
+        /* .modal-body {
+            padding: 24px;
+            position: relative;
+            flex: 1 1 auto;
+            padding: 1rem;
+        } */
+
+        /* .modal-content {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            pointer-events: auto;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid rgba(0, 0, 0, .2);
+            border-radius: 24px;
+            outline: 0;
+        }
+
+
+        .carousel-indicators {
+            margin-bottom: 4px;
+            border-radius: 8px;
+        }
+
+        .carousel-indicators [data-bs-target] {
+            width: 8px;
+            height: 8px;
+            border: 0;
+            border-radius: 8px;
+        } */
+
+
+        .driverBx {
+            width: 89%;
+
+            z-index: 1023;
+            position: absolute;
+            top: 2%;
+            border: solid 1px #4a36ec;
+            border-radius: 24px;
+            border-bottom-left-radius: 0;
+            background-Color: #4a36ec;
+            box-shadow: 0 0 0 0 rgba(31, 22, 95, 0.2), 0 2px 4px 0 rgba(31, 22, 95, 0.2), 0 7px 7px 0 rgba(31, 22, 95, 0.17)
+        }
+
+        /*.call_action {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px;
+            padding: 16px 30px;
+            width: calc(100% - 40px);
+            position: fixed;
+            bottom: 0px;
+            border-radius: 16px;
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            background-color: rgba(41, 41, 41, 0.6);
+
+        }
+
+        .call_action small {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .call_action a {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        a {
+            text-decoration: none;
+        } */
+
+        p {
+            margin: 0;
+        }
+
+
+
+
+        /*font-family: Roboto,Arial,sans-serif;*/
+
+        /*box-shadow: 0 2px 6px rgba(0,0,0,.3)*/
+        /* #driverbox {
+            left: 50%;
+            transform: translate(-50%, 20%);
+            width: 95%;
+            z-index: 1023;
+            position: fixed;
+            top: -1%;
+            height: 148px;
+            border: solid 1px #4a36ec;
+            border-radius: 24px;
+            border-bottom-left-radius: 0;
+            background-Color: #4a36ec;
+            box-shadow: 0 0 0 0 rgba(31, 22, 95, 0.2), 0 2px 4px 0 rgba(31, 22, 95, 0.2), 0 7px 7px 0 rgba(31, 22, 95, 0.17), 0 16px 9px 0 rgba(31, 22, 95, 0.1), 0 28px 11px 0 rgba(31, 22, 95, 0.03), 0 44px 12px 0 rgba(31, 22, 95, 0);
+        } */
+
+        /*#recentre {
+            width: 10%;
+            z-index: 1023;
+            position: absolute;
+            top: 55%;
+            height: 5%;
+            right: 1%;
+            background-Color: #2a445b;
+            box-shadow: 0 2px 6px rgba(0,0,0,.3);
+        }
+
+        .tabs .tab a {
+            color: blue !important;
+        }
+
+
+        #myImg {
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+            #myImg:hover {
+                opacity: 0.7;
+            }
+
+        /* The Modal (background) */
+        .modal {
+            /* backdrop-filter: blur(8px); */
+
+            /* display: none; */
+            /* Hidden by default */
+            /* position: absolute; */
+            /* Stay in place */
+            /* z-index: 1567; */
+            /* Sit on top */
+            /* padding-top: 10px; */
+            /* Location of the box */
+            /* left: 0;
+            top: 0;
+            width: 100%; */
+            /* Full width */
+            /* height: 100%; */
+            /* Full height */
+            /* overflow: auto; */
+            /* Enable scroll if needed */
+            /* background-color: rgb(0, 0, 0); */
+            /* Fallback color */
+            /* background-color: rgba(0, 0, 0, 0.9); */
+
+            /* Black w/ opacity */
+        }
+
+        /*Modal Content (image)*/
+
+        /* Caption of Modal Image */
+        /* .modal-content, */
+        /* #caption {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            text-align: center;
+            color: #ccc;
+            padding: 10px 0;
+            height: 150px;
+        } */
+
+        /* Add Animation */
+        /* .modal-content #caption {
+            -webkit-animation-name: zoom;
+            -webkit-animation-duration: 0.6s;
+            animation-name: zoom;
+            animation-duration: 0.6s;
+        } */
+
+        /* @-webkit-keyframes zoom {
+            from {
+                -webkit-transform: scale(0)
+            }
+
+            to {
+                -webkit-transform: scale(1)
+            }
+        }
+
+        @keyframes zoom {
+            from {
+                transform: scale(0)
+            }
+
+            to {
+                transform: scale(1)
+            }
+        } */
+
+        /* The Close Button */
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /*100% Image Width on Smaller Screens */
+        /* /* @media only screen and (max-width: 700px) {
+            .modal-content {
+                width: 100%;
+            }
+        } */
+
+
+
+        .sidenav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1024;
+            top: 0;
+            right: 0;
+            background-color: #fff;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+
+        .sidenav a {
+            border-width: 1px 0 1px 0;
+            border-color: rgb(0, 0, 0);
+            border-style: solid;
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 15px;
+            font-family: Poppins;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .sidenav a:hover {
+            color: #000000;
+        }
+
+        .sidenav .closebtn {
+            border-radius: 50%;
+            padding: 0.5em;
+            margin-top: 2%;
+            width: 15px;
+            height: 15px;
+            border: 1px solid #1b1b1c;
+            color: #f01c1c;
+            font-weight: bold;
+            position: absolute;
+            top: 0;
+            text-align: center;
+            left: 0px;
+            font-size: 12px;
+            margin-right: 50px;
+            margin-left: 2%;
+        }
+
+        .sidenav .closebtn:hover {
+            border: 1px solid blue;
+            background-color: yellow;
+            color: #ffffff;
+        }
+
+        .sidenav .closebtn::before {
+            content: " ";
+            position: absolute;
+            display: block;
+            width: 2px;
+            left: 12px;
+            top: 5px;
+            bottom: 5px;
+            transform: rotate(45deg);
+        }
+
+        @media screen and (max-height: 450px) {
+            .sidenav {
+                padding-top: 15px;
+            }
+
+            .sidenav a {
+                font-size: 18px;
+            }
+        }
+
+
+
+        center {
+            font-size: 150px;
+            animation: fadeIn 15s;
+        }
+
+        @keyframes center {
+            0% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+    <!--<script src="https://apis.mapmyindia.com/advancedmaps/v1/fd0b726bc35998059cee40b4d331acf2/map_load?v=1.3&plugin=polylinedecorator,path.drag"></script>-->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"
+        integrity="sha512-Q7HOppxoH0L2M7hreVoFCtUZimR2YaY0fBewIYzkCgmNtgOOZ5IgMNYxHgfps0qrO1ef5m7L1FeHrhXlq1I9HA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://maps-gl.nextbillion.io/maps/v2/api/js"></script>
+
+
+    <!-- <div id="loader"
+        style='position:absolute;width:70px;height:70px;margin:auto;top:0;left:0;right:0;bottom:0;    z-index: 12223;'>
+        <i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>
+        <span class="sr-only">Loading...</span>
+    </div> -->
+
+    <!-- <div id="loader" class="spinner-border m-5" srole="status"
+        style=" margin:auto; top:0; left:0; right:0; bottom:0; z-index: 12223;">
+        <span class="visually-hidden">Loading...</span>
+    </div> -->
+
+    <div id="notifier" class="center" style="position:fixed;
+        top: 10%;
+        left: 50%;
+        width:24em;
+        height:18em;
+        display: none;
+        margin-top: -9em; /*set to a negative number 1/2 of your height*/
+        margin-left: -12em; /*set to a negative number 1/2 of your width*/
+        border: 1px solid #ffffff;
+        background-color: #ffffff;">
+        <p style="text-align:center;font-family:Poppins">Cab live tracking is not available currently,<br> as you have
+            already been marked as boarded/No-Show.</p>
+
+    </div>
+    <div class="container2">
+        <div id="output"></div>
+    </div>
+    <div id="map">
+    </div>
+    <!-- <div id='hamburgernav' style="z-index: 1023;position: absolute;top: 15%;right: 5px;display:none">
+        <span style="vertical-align: middle;border-style: none;height: 100%;width: 100%;" onclick="openNav()"><i
+                class="fa fa-bars  fa-2x" aria-hidden="true"></i></span>
+    </div> -->
+    <!-- <div id="mySidenav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <a id="selfnoshow">
+            Self No Show
+        </a>
+        <a id="cabnoshow" style="display:none">Cab No Show</a>
+        <a id="sharebut" style="display:none">Share Cab Details</a>
+        <a id="whatsapp" style="display:none">&emsp; Whatsapp</a>
+        <a id="sms" style="display:none">&emsp; SMS</a>
+    </div> -->
+    <!-- <div id="popup"
+        style="width: 90%;z-index: 1023;position: absolute;top: 10%;height: 20%;right: 5%;background-Color: #f3f3f3;box-shadow: 0 2px 6px rgba(0,0,0,.3);display:none;">
+        <div style="margin: 5%;text-align: center;font-size: LARGE;">
+            Your Cab's current location cannot be determined as we do not seem to be receiving data from the Driver's
+            mobile.
+            Please contact the Driver to know his exact location.
+        </div>
+    </div> -->
+
+    <!-- <div id="popupcovid" style="width: 90%;z-index: 1024;position: absolute;top: 5%;height: 60%;right: 5%;background-Color: #f3f3f3;box-shadow: 0 2px 6px rgba(0,0,0,.3);display:none;">
+    <div style="margin: 3% 2% 1% 2%;text-align: left;">
+    <b>IMPORTANT</b> protocols to follow at Accenture if you are unwell or a close contact of a Coronavirus positive individual.</br>
+     <ul style=" list-style-type: circle;">
+     <li><b>Stay home</b> if you are unwell</li>
+     </br>
+     <li>Seek medical advice if you have a fever, cold, headache, cough or other flu-like symptoms. Contact <b>ASOC at +91 80 71641777 / 080 69541777 .</b> Inform your supervisor/ HR representative immediately</li>
+     </br>
+     <li>	<b>DO NOT</b> return to office until you have been notified through e-mail by your HR Representative that you can do so</li>
+    </ul>
+
+
+    By Accenture Team </br></br>
+    <button id='covidok' style="box-shadow:0 2px 6px rgba(0,0,0,.6);height: 55%;width: 15%;margin-top:6px;border:none;color: blue;"> OK </button>
+    </div>
+    </div> -->
+
+    <!-- <div id="popupcovid" class="card" style="border-radius: 2%; z-index: 1024;position: absolute;top: 2%;height: 66%;width: 90%;right: 5%;background-Color: aliceblue;box-shadow: 0 2px 6px rgba(0,0,0,.3);display:none;border-style: groove;"> -->
+
+    <!-- First Modal -->
+    <div class="modal fade" id="firstModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true"
+        id="popupcovid">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <p>IMPORTANT protocols to follow at Accenture if you are unwell or a close contact of a Coronavirus
+                        positive individual.</p>
+
+                    <ul class="list my-3">
+                        <li>Stay home if you are unwell.</li>
+                        <li>Seek medical advice if you have a fever, cold, headache, cough or other flu-like symptoms.
+                            Contact ASOC at +91 80 71641777 / 080 69541777 . Inform your supervisor/ HR representative
+                            immediately</li>
+                        <li>DO NOT return to office until you have been notified through e-mail by your HR
+                            Representative that you can do so</li>
+                    </ul>
+
+                    <p>Regards, India Accenture Workplace Solutions</p>
+
+                    <div class="d-grid"><button type="button" class="btn btn-dark btn-cst offWhite mt-4"
+                            data-bs-toggle="modal" data-bs-target="#secondModal" data-bs-dismiss="modal">OK</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- First Modal -->
+
+    <!-- <div id="popupcovid2" class="card"
+        style="border-radius: 2%;z-index: 1024;position: absolute;top: 2%;height: 67%;width: 90%;right: 5%;background-Color: aliceblue;box-shadow: 0 2px 6px rgba(0,0,0,.3);display:none;border-style: groove;">
+
+
+        <div class="container" style="margin: 5% 5% 0% 5%;text-align: left;;font-family: Roboto,Arial,sans-serif;">
+            <p><b>New Features in eTMS Buddy</b></p>
+            <ul style=" list-style-type: circle;">
+
+                <li>
+                    <b>Cab users can mark themselves as “no-show”</b> </br>
+                    If you’ve missed cancelling your scheduled ride for day, you can now mark yourself
+                    as “no-show” on the “Where is my cab” tab. You no longer have to wait for the
+                    transport helpdesk to call you.
+
+                </li>
+                </br>
+                <li>
+                    <b>Check the boarding status of fellow passengers</b> </br>
+                    You will now be able to check the boarding status of your fellow passengers under
+                    the “cab info” tab. Use this feature to get real-time updates on scheduled pick-ups.
+                </li>
+
+            </ul>
+            <p><button id='covidok2'
+                    style='  border: none; outline: 0; display: inline; padding: 8px; color: white; background-color: #000; text-align: center; cursor: pointer; width: 60%; font-size: 18px; margin:1% 20% 1% 20%'>OK</button>
+            </p>
+        </div>
+    </div> -->
+
+    <!-- Second Modal -->
+    <div class="modal fade" id="secondModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true"
+        id="popupcovid2">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+
+                    <div class="d-block text-center">
+                        <p>New Features in eTMS Buddy</p>
+                        <img src="images/logo.svg" alt="">
+                    </div>
+
+                    <ul class="list">
+                        <li><strong class="d-block">Cab users can mark themselves as "no-show" </strong>
+                            If you've missed cancelling your scheduled ride for day, you can now mark yourself as
+                            "no-show" on the "Where is my cab" tab. You no longer have to wait for the transport
+                            helpdesk to call you.</li>
+
+                        <li><strong class="d-block">Check the boarding status of fellow passengers </strong>
+                            You will now be able to check the boarding status of your fellow passengers under the "cab
+                            info" tab. Use this feature to get real-time updates on scheduled pick-ups.</li>
+                    </ul>
+
+                    <div class="d-grid"><button type="button" class="btn btn-dark btn-cst mt-4 offWhite"
+                            data-bs-dismiss="modal">OK</button></div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Second Modal -->
+
+
+    <!-- <div id="recentre" style='display:none'><img style='margin: 25%;margin-block-end: auto;width: 50%;height: 50%;' src="gps.png"></i></div> -->
+
+    <!-- <div id="myModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="img01">
+        <div id="caption"></div>
+    </div> -->
+
+    <!-- Driver and Guard Info Box -->
+
+    <div id="main" class="driverBx">
+        <img src="images/logo_icon.svg" class="logo_icon" alt="">
+        <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel" data-bs-interval="false">
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active"
+                    aria-current="true" aria-label="Slide 1"></button>
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1"
+                    aria-label="Slide 2"></button>
+            </div>
+            <div class="reaching bg-dark">
+                <h4 id="eta"><small>Reaching in</small></h4>
+            </div>
+
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <div class="DetalBx">
+                        <div class="imgBx" id="imgBx">
+                        </div>
+                        <div class="personDetalBx">
+                            <span class="badge rounded-pill driver_badge">Driver</span>
+                            <h2 id="tdname"></h2>
+                            <table>
+                                <tr>
+                                    <td id="td_vtype"></td>
+                                    <td> &nbsp;|&nbsp; </td>
+                                    <td id="td_regno"></td>
+                                </tr>
+                            </table>
+                            <span class="badge rounded-pill otp">
+                                <h3 id="Otp"></h3>
+                            </span>
+
+                            <!-- <span class="badge rounded-pill otp">OTP 7623</span> -->
+                        </div>
+                    </div>
+
+                </div>
+                <div class="carousel-item">
+                    <div class="DetalBx">
+                        <div class="imgBxGuard" id="imgBxGuard">
+                        </div>
+                        <!-- <div class="reaching">
+    
+                                <h4><small>Reaching in</small> 7 Mins</h4>
+                            </div> -->
+                        <div class="personDetalBx">
+                            <span class="badge rounded-pill driver_badge">Guard</span>
+                            <h2 id="guardname"></h2>
+                            <h3 id="escortid"></h3>
+                            <!-- <span class="badge rounded-pill otp"> -->
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Driver and Guard Info Box -->
+
+
+    <!-- <div id="driverbox">
+        <img src="images/logo_icon.svg" class="logo_icon" alt="">
+        <div style='height: 20%;position: absolute;left: 0.5em; bottom: 5px; '>
+            <div style="display:flex;flex-direction:row;margin-top: 5%;">
+                <button id='wheelicon' style='display:none;border-radius: 3px;margin-right: 20%;'>
+                    <img src="wheel.svg" style="padding: 2%;"></img>
+                </button>
+                <button id='guardicon' style='display:none;border-radius: 3px;'>
+                    <img src="guard.svg" style="padding: 2%;"></img>
+                </button>
+            </div>
+        </div> -->
+
+
+    <!-- <div id='main' class="carousel-inner">
+            <div class="carousel-item active">
+                <div class="DetalBx">
+                    <div class="imgBx" id="imgBx">
+                    </div>
+                    <div class="personDetalBx" style="color: black; ">
+                        <span class="badge rounded-pill driver_badge">Driver</span>
+
+                        <h2 id="tdname"></h2>
+
+                        <table>
+                            <tr>
+                                <td id="td_vtype"></td>
+                                <td>|</td>
+                                <td id="td_regno"></td>
+                            </tr>
+                        </table>
+
+
+                        <span class="badge rounded-pill otp">
+                            <table>
+                                <tr>
+                                    <td id="Otp"></td>
+                                </tr>
+                            </table>
+                        </span>
+                    </div>
+                </div>
+                
+            </div> -->
+
+
+
+    <!-- <div id='textcontent' style='width:40%;float:left;height:100%;margin-left:20px;font-family:Arial'>
+
+                <div style="display:flex; flex-direction:column; margin-top:.7rem;text-align:left;">
+                    <p style="margin-bottom:.1rem;font-weight:bold;border-bottom: 0.5px dotted black;" id="tdname"></p>
+                    <p style="margin-bottom:.1rem;" id="td_regno"></p>
+                    <p style="margin-bottom:.1rem;" id="td_vtype"></p>
+                    <p style="margin-bottom:.1rem;" id="boarding_status"></p>
+                    <p style="margin-bottom:.1rem;" id="eta"></p>
+                    <p id="Otp"></p>
+                </div>
+
+
+            </div> -->
+
+
+
+    <!-- <div id='call_btn' style='width:15%;float:right;display:none;margin-bottom:1rem; margin-right: 5%;'>
+
+        <button id='driver'
+            style='box-shadow:0 2px 6px rgba(0,0,0,.6);height:30%;width:90%;margin-top:1.5rem;border:none;'>
+
+            <img style="width:100%;height:100%;border:none !important;" src="phone.svg"></img>
+
+        </button>
+
+    </div> -->
+
+    <!-- <div id='help_btn' style='width:15%;float:right;display:none;    margin-right: 5%;'>
+
+        <button id='helpbutton'
+            style='box-shadow:0 2px 6px rgba(0,0,0,.6);height:30%;width:90%;margin-top:6px;border:none;'>
+
+            <a id='aTag'>
+
+                <img style="width:100%;height:100%;border:none !important;" src="headset.svg"></img>
+
+            </a>
+
+
+        </button>
+
+    </div> -->
+
+
+
+
+
+
+
+
+
+
+
+    <!-- <div id='mainG' style='display:none ;height:75%'>
+
+
+
+        <div id='Ecirclemain'
+            style='width:30%;float:left;height:64%;margin-top:3px;margin-top:.8rem;margin-left:5px;border-radius: 50%;'>
+            <div id='Ecircle' style='margin-top:2px;margin-left:5%;'>
+            </div>
+        </div>
+
+
+
+
+
+        <div id='textcontentG' style='width:40%;float:left;height:100%;margin-left:12px;'>
+            <div style="display:flex; flex-direction:column; margin-top:.7rem;text-align:left;margin-left:1rem;">
+                <p id='Escortdetails' style="margin-bottom:.5rem;font-weight:bold;">Escort Details:</p>
+                <p style="margin-bottom:.5rem" id="guardname"></p>
+                <p id="escortid"></p>
+            </div>
+        </div>
+
+        <div id='call_btn' style='width:15%;float:right;display:none;margin-bottom:1rem;'>
+            <button id='driver'
+                style='box-shadow:0 2px 6px rgba(0,0,0,.6);height:30%;width:90%;margin-top:6px;border:none;'>
+                <img style="width:100%;height:100%;border:none !important;" src="phone.svg"></img>
+            </button>
+        </div>
+
+        <div id='help_btn' style='width:15%;float:right;display:none;'>
+            <button id='helpbutton'
+                style='box-shadow:0 2px 6px rgba(0,0,0,.6);height:30%;width:90%;margin-top:6px;border:none;'>
+                <a id='aTag'>
+                    <img style="width:100%;height:100%;border:none !important;" src="headset.svg"></img>
+                </a>
+            </button>
+        </div>
+
+    </div>
+    </div> -->
+
+
+    <div class="call_action">
+        <a href="#!" data-bs-toggle="modal" data-bs-target="#noShowModal">
+            <img src="images/no_show.svg" alt="">
+            <small>Self No Show</small>
+        </a>
+        <a id="call_btn" href="#!">
+            <img src="images/helpdesk.svg" alt="" id="help_btn">
+            <small>Call Helpdesk</small>
+        </a>
+        <!-- <div id="call_btn">
+        <a href="#!" id="driver">
+            <img src="images/call.svg" alt="" >
+            <small>Call Driver</small>
+        </a>
+    </div> -->
+    <div id="call_btn">
+        <button id="driver">
+            <img src="images/call.svg" alt="" >
+            <small>Call Driver</small>
+        </button>
+    </div>
+        <!-- <div id="call_btn">
+            <button id="driver">
+                <img src="images/call.svg" alt="" >
+                <small>Call Driver</small>
+            </button>
+        </div> -->
+    </div>
+
+
+    <!-- No Show Modal -->
+    <div class="modal fade" id="noShowModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+
+                    <h5>Confirmation</h5>
+                    <h6>Are you really want to confirm your no show for this trip?</h6>
+
+                    <div class="row">
+                        <div class="col-6"><button type="button" class="btn w-100 btn-outline-secondary btn-cst"
+                                data-bs-dismiss="modal">Cancel</button></div>
+                        <div class="col-6" id="selfnoshow"><button type="button" class="btn w-100 btn-danger btn-cst"
+                                data-bs-dismiss="modal">OK</button></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- No Show Modal -->
+
+    <!-- <div style='height: 20%;position: absolute;left: 7.5em; '> -->
+    <!-- <div style="display:flex;flex-direction:row;margin-top: 5%;"> -->
+    <!-- <button id='wheelicon' style='display:none;border-radius: 3px;margin-right: 20%;'> -->
+    <!-- <img src="wheel.svg" style="padding: 2%;"></img> -->
+    <!-- </button> -->
+    <!-- <button id='guardicon' style='display:none;border-radius: 3px;'> -->
+    <!-- <img src="guard.svg" style="padding: 2%;"></img> -->
+    <!-- </button> -->
+    <!-- </div> -->
+    <!-- </div> -->
+    <script>
+        $('#notifier').hide();
+        function openNav() {
+            document.getElementById("mySidenav").style.width = "250px";
+        }
+
+        function closeNav() {
+            document.getElementById("mySidenav").style.width = "0";
+            $("#whatsapp").hide(); $("#sms").hide();
+        }
+        var locupdate;
+        var marker = [];
+        var etainterval;
+        var eta = '';
+        var b2bflag = 1;
+        var url = [];
+        var URL_RouteDetail = '';
+        var URL_GetGPSLogger = '';
+        var fromloc = '77.087353,28.462420';
+        var toloc = '';
+        var OTP;
+        var map = null;
+        var gender;
+        var employeeid;
+        var poly = [];
+        var decorator;
+        var line;
+        var interval = 0;
+        var driver_contact = [];
+        var drivername = [];
+
+        var vehicleRegNo = [];
+        var vehicletype = [];
+        var tptContactNo = [];
+        var emplatlng;
+        var emplatlng1;
+        var empname = '';
+        var cabnoshowradius = '';
+        var homelatlng = '';
+        var URL_UpdateCabNoShow = '';
+        var myTrackingStatus = '';
+        var isproximity = 1;
+        var pp = [];
+        // var center = new L.LatLng(28.549948, 77.268241);
+        var empcode = [];
+
+        /*******NBM changes 21 july 23********/
+        var nbmap;
+        var driverlat; var driverlng
+        var position = [];
+        /****End*****/
+
+        $(document).on('click', '#guardicon', function () {
+            $('#main').hide();
+            $('#mainG').show();
+            $("#wheelicon").css("background-color", "white"); $("#guardicon").css("background-color", "Yellow");
+        });
+
+
+        $(document).on('click', '#wheelicon', function () {
+
+            $('#mainG').hide();
+            $('#main').show();
+            $("#guardicon").css("background-color", "white"); $("#wheelicon").css("background-color", "Yellow");
+
+        });
+
+        function getQueryStringValue(key) {
+            return unescape(
+                window.location.search.replace(
+                    new RegExp(
+                        "^(?:.*[&\\?]" +
+                        escape(key).replace(/[\.\+\*]/g, "\\$&") +
+                        "(?:\\=([^&]*))?)?.*$",
+                        "i"
+                    ),
+                    "$1"
+                )
+            );
+        }
+
+        function getQueryStringValue1(key) {
+            return unescape(
+                window.location.search.replace(
+                    new RegExp(
+                        "^(?:.*[&\\?]" +
+                        escape(key).replace(/[\.\+\*]/g, "\\$&") +
+                        "(?:\\=([^&]*))?)?.*$",
+                        "i"
+                    ),
+                    "$2"
+                )
+            );
+        }
+
+        var value = getQueryStringValue("v");
+        var value1 = getQueryStringValue("s");
+        //parses the string to get the value for route id , client id and empid
+        //its of the form clientid-routeid-empid
+        var vs = value.substring(4, value.length);
+
+
+        var clientid = parseInt(value.substring(0, 4));
+        var routeid = '';
+        var empid = '';
+
+
+
+
+        if (value.length == 25) {
+            empid = (value.slice(value.length - 8, value.length));
+            routeid = vs.substring(0, vs.length - 8);
+            console.log(empid);
+            console.log(routeid);
+        }
+        else if (value.length == 24) {
+            empid = (value.slice(value.length - 7, value.length));
+            routeid = vs.substring(0, vs.length - 7);
+            console.log(empid);
+            console.log(routeid);
+        }
+        else if (value.length == 23 || value.length == 21) {
+            empid = (value.slice(value.length - 6, value.length));
+            routeid = vs.substring(0, vs.length - 6);
+            console.log(empid);
+            console.log(routeid);
+        }
+        else if (value.length == 22 || value.length == 20) {
+            empid = (value.slice(value.length - 5, value.length));
+            routeid = vs.substring(0, vs.length - 5);
+            console.log(empid);
+            console.log(routeid);
+        }
+        else if (value.length == 19) {
+            empid = (value.slice(value.length - 4, value.length));
+            routeid = vs.substring(0, vs.length - 4);
+            console.log(empid);
+            console.log(routeid);
+        }
+        var myUrl = window.location.href;
+        //alert(myUrl);
+        var murl = myUrl.split("&");
+        var appwimc = 0;
+        var surl;
+        if (murl[1] == 'app=1') {
+            appwimc = 1;
+            surl = murl[2];
+        }
+        else if (murl[2] == 'app=1') {
+            appwimc = 1;
+            surl = murl[1];
+        }
+        else {
+            surl = murl[1];
+            appwimc = 0;
+        }
+
+
+
+
+        $("#sharebut").on("click", function () {
+            //  $("#sharebut1").slideToggle(500);
+            // $("#share").show();
+            //  $("#popupshare").toggle();
+
+            $("#whatsapp").show(); $("#sms").show();
+
+            //share();
+        });
+
+        $("#whatsapp").on("click", function () {
+            //  $("#sharebut1").slideToggle(500);
+            // $("#share").show();
+
+
+            share();
+        });
+        $("#sms").on("click", function () {
+            //  $("#sharebut1").slideToggle(500);
+            // $("#share").show();
+
+
+            share1();
+        });
+
+        if ((clientid == '4' || clientid == '14' || clientid == '13' || clientid == '15' || clientid == '10' || clientid == '25' || clientid == '26') && (appwimc == 0)) {
+            $("#popupcovid").show();
+        }
+        $("#covidok").on("click", function () {
+            $("#popupcovid").hide();
+            $("#popupcovid2").show();
+        });
+        $("#covidok2").on("click", function () {
+            $("#popupcovid2").hide();
+        });
+        $("#selfnoshow").on("click", function () {
+            var selfnoshowconfirm = confirm('Do you want to mark yourself as no-show?');
+            if (selfnoshowconfirm == true) {
+                console.log("self no show clicked");
+                if (myTrackingStatus != '----') {
+                    alert("You cannot mark yourself as No-Show for this trip as you are already marked as " + myTrackingStatus + " for this trip.");
+                }
+                else {
+                    $.ajax({
+                        type: 'POST',
+                        cache: false,
+                        url: URL_UpdateTrackingSelf,
+                        data: JSON.stringify({
+                            routeid: routeid,
+                            empid: empid,
+                            trackingaction: 'N',
+                            actionby: '0',
+                            distance: employeeid
+                        }),
+                        crossDomain: true,
+
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'json'
+                    })
+                        .done(function (data) {
+
+                            alert("You have marked yourself as No-Show.")
+
+
+                        })
+                        .fail(function (e) {
+                            alert('Error: ' + e.statusText);
+                        })
+                        .always(function () { });
+
+                }
+            }
+            else {
+                console.log("cancelled");
+            }
+        });
+
+
+        $("#cabnoshow").on("click", function () {
+            function arePointsNear(checkPoint, centerPoint, km) {
+                var ky = 40000 / 360;
+                var kx = Math.cos((Math.PI * centerPoint.lat) / 180.0) * ky;
+                var dx = Math.abs(centerPoint.lng - checkPoint.lng) * kx;
+                var dy = Math.abs(centerPoint.lat - checkPoint.lat) * ky;
+                return Math.sqrt(dx * dx + dy * dy) <= km;
+            }
+            getLocation();
+
+            function getLocation() {
+
+
+
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(showPosition, showError);
+                } else {
+                    alert("Geolocation is not supported by this browser.");
+                }
+            }
+
+
+
+
+
+            function showPosition(position) {
+
+
+                var homelatlng = { lat: position.coords.latitude, lng: position.coords.longitude };
+
+
+                var n = arePointsNear(homelatlng, emplatlng1, cabnoshowradius);
+
+                if (n == true) {
+
+                    var confirmArrived = confirm('Do you want to mark the cab as no-show?');
+                    if (confirmArrived == true) {
+
+                        $.ajax({
+
+                            type: 'POST',
+                            cache: false,
+                            url: URL_UpdateCabNoShow,
+                            data: JSON.stringify({
+                                "routeid": routeid,
+                                "empid": empid,
+                                "trackingaction": employeeid,
+                                "lat": '0',
+                                "lng": '0'
+                            }),
+                            crossDomain: true,
+
+                            contentType: 'application/json; charset=utf-8',
+                            dataType: 'json'
+                        })
+                            .then(function (data) {
+                                console.log(' updated');
+                                alert('Thank you for the NO Show alert, we will notify the driver immediately.');
+                                $("#cabnoshow").hide();
+                            })
+                            .fail(function (e) {
+                                console.log('Error : ' + e);
+                            });
+                    }
+                    else {
+                        console.log('cab no show cancelled')
+                    }
+                }
+                else {
+                    alert('Current location does not match pick-up location. Reach pick-up point to confirm Cab as No show. ');
+
+                }
+
+            }
+
+
+
+
+
+
+            function showError(error) {
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        alert("User denied the request for Geolocation.");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        alert("Location information is unavailable.");
+                        break;
+                    case error.TIMEOUT:
+                        alert("The request to get user location timed out.");
+                        break;
+                    case error.UNKNOWN_ERROR:
+                        alert("An unknown error occurred.");
+                        break;
+                }
+            }
+
+
+            // $("#cabnoshow").hide();
+
+
+        });
+
+        function share() {
+            $(document).ready(function () {
+                var isMobile = {
+                    Android: function () {
+                        return navigator.userAgent.match(/Android/i);
+                    },
+                    BlackBerry: function () {
+                        return navigator.userAgent.match(/BlackBerry/i);
+                    },
+                    iOS: function () {
+                        return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+                    },
+                    Opera: function () {
+                        return navigator.userAgent.match(/Opera Mini/i);
+                    },
+                    Windows: function () {
+                        return navigator.userAgent.match(/IEMobile/i);
+                    },
+                    any: function () {
+                        return (
+                            isMobile.Android() ||
+                            isMobile.BlackBerry() ||
+                            isMobile.iOS() ||
+                            isMobile.Opera() ||
+                            isMobile.Windows()
+                        );
+                    }
+                };
+                //alert(isMobile)
+                if (isMobile.any()) {
+
+                    if (gender == 'M') {
+
+                        var url = empname + " wants you to view his cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                    }
+                    else if (gender == 'F') {
+
+                        var url = empname + " wants you to view her cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                    }
+                    else {
+                        var url = empname + " wants you to view their cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                    }
+                    var message = encodeURIComponent(url);
+                    //sharedStat=1;
+                    var whatsapp_url = "whatsapp://send?text=" + message;
+                    window.location.href = whatsapp_url;
+                } else {
+                    alert("Please share this article in mobile device");
+
+                }
+            });
+
+        }
+
+
+        function share1() {
+            var getOS = function () {
+                var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                if (
+                    userAgent.match(/iPad/i) ||
+                    userAgent.match(/iPhone/i) ||
+                    userAgent.match(/iPod/i)
+                ) {
+                    return "iOS";
+                } else if (userAgent.match(/Android/i)) {
+                    return "Android";
+                } else {
+                    return "unknown";
+                }
+            }
+
+            var device = getOS();
+
+
+
+
+            if (gender == 'M') {
+
+                var url = empname + " wants you to view his cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+            }
+            else if (gender == 'F') {
+
+                var url = empname + " wants you to view her cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+            }
+            else {
+                var url = empname + " wants you to view their cab details. Kindly click on the link below : \n" + myUrl + "&s=s";
+            }
+
+
+            var message = encodeURIComponent(url);
+
+
+            if (device == "iOS") {
+                window.location.href = "sms: &body=" + message;
+            }
+
+            if (device == "Android") {
+                window.location.href = "sms:?body=" + message;
+            }
+        }
+
+
+
+        function secondsToHms(d) {
+            d = Number(d);
+            var h = Math.floor(d / 3600);
+            var m = Math.floor(d % 3600 / 60);
+            var s = Math.floor(d % 3600 % 60);
+
+            var hDisplay = "", mDisplay = "", sDisplay = "";
+            if (h > 0) {
+                hDisplay = h + " hr ";
+            }
+            if (m > 0) {
+                mDisplay = m + " min ";
+            }
+            if (s > 0) {
+                sDisplay = s + " sec";
+            }
+
+            return hDisplay + mDisplay + sDisplay;
+        }
+
+        if (value || value1) {
+
+            $('#noteBox').hide();
+
+            $.ajax({
+                cache: false,
+                type: "GET",
+                username: "user1",
+                password: "Acc@bang10",
+                url: "https://www.etmsdrive.in/appControlRest/api/v1/getClientDetailById",
+                data: {
+                    CID: clientid
+                },
+                crossDomain: true,
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: OnSuccess3,
+                error: OnError3
+            });
+            function OnSuccess3(data, status) {
+                $("#loader").hide();
+                $("#output").empty();
+                $.each(JSON.parse(data), function (key, val) {
+                    url.push(val.URL);
+                    //BASE_URL = url[0];
+                    //TrackURL = val.dashboardurl; // uncommnent this one when this comes from api
+                    TrackURL = val.trackurl; //Changed by Anurag, On 29-11-17, to implemnet in amex
+                    BASE_URL = val.trackurl; //Changed by Anurag, On 29-11-17, to implemnet in amex
+                    // //until then use this one below.
+                    //TrackURL = "https://www.etmsdrive.in/etmsDrive/api/tracking/v1/";
+                    MEDIA_URL = "";
+                    //#change
+                    var URL_cabvalidation = TrackURL + "MyCabValidation";
+                    var URL_ProfilePicture = val.photourl;
+                    URL_CallingAPI = TrackURL + "CallingAPI";
+                    URL_RouteInfo = TrackURL + "GetRouteInfoMyCab";
+                    URL_RouteDetail = TrackURL + "GetRouteDetail";
+                    URL_GetGPSLogger = TrackURL + "GetGPSLogger";
+                    URL_UpdateCabNoShow = TrackURL + 'UpdateCabNoShow';
+                    URL_UpdateTrackingSelf = TrackURL + 'UpdateTrackingSelf';
+
+
+                    $.ajax({
+                        type: "POST",
+                        username: "user1",
+                        password: "Acc@bang10",
+                        url: URL_RouteInfo, //URL_RouteInfo = BASE_URL+"GetRouteInfoMyCab";
+                        data: "{RouteID:'" + routeid + "'}",
+                        crossDomain: true,
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: OnSuccess2,
+                        error: OnError2
+                    });
+                    function OnSuccess2(data, status) {
+
+                        $.each(JSON.parse(data), function (key, val) {
+                            //	console.log(JSON.stringify(data, null, 4))
+                            if (val.routeID != 'NA') {
+                                if (val.actVehicleStartTime != null && val.actVehicleStartTime != '' && val.actVehicleStartTime != undefined) {
+
+                                    if (clientid == '4' || clientid == '10' || clientid == '14' || clientid == '13' || clientid == '15' || clientid == '25' || clientid == '26') {
+                                        $('#hamburgernav').show();
+                                    }
+                                    else {
+                                        $('#hamburgernav').hide();
+                                    }
+
+                                }
+
+
+                                //var profileurl = MEDIA_URL + "ProfilePicture/" + val.ProfilePicture;
+                                cabnoshowradius = val.cabnoshowradius / 1000;
+                                driver_contact.push(val.driverContact);
+                                var profileurl = URL_ProfilePicture + val.driverContact + ".jpeg";
+                                var EscortImage = val.guardphotourl;
+
+                                //var profileurl =URL_ProfilePicture
+                                var p = val.vehicleRegNo.toUpperCase();
+                                if (val.isb2b == "1") {
+                                    b2bflag = "3";
+                                } else {
+                                    b2bflag = "1";
+                                }
+                                if (val.guardid == '' || val.guardid == null) {
+
+                                    console.log('no guard');
+
+                                }
+                                else {
+                                    $('#guardicon').show();
+                                    $('#wheelicon').show();
+                                    console.log('guard');
+
+                                }
+
+                                drivername.push(val.driverName);
+                                vehicleRegNo.push(p);
+                                vehicletype.push(val.vehicleType);
+
+                                tptContactNo.push(val.tptContactNo);
+                                $("#guardname").html(val.gaurdname);
+                                $("#escortid").html(val.guardid);
+
+
+                                //  center = new L.LatLng(val.faclat, val.faclng);
+
+                                $('#tdname').html(drivername);
+                                $('#td_regno').html(vehicleRegNo);
+                                $('#td_vacstatus').html(val.drivervactatus);
+                                $('#td_vacstatusE').html(val.guardvacstatus);
+                                $('#td_vtype').html(vehicletype);
+                                console.log("")
+
+
+                                var img = new Image();
+                                var div = document.getElementById('imgBx');
+                                img.id = "driverImage";
+                                img.src = profileurl;
+                                // img.style.width = '100%';
+                                img.style.width = '110px'
+                                img.style.height = '148px'
+                                img.style.borderTopLeftRadius = '24px'
+
+                                // img.style.width = '90px';
+                                // img.style.height = '90px';
+
+                                // img.style.borderRadius = '50%';
+                                // img.style.height = 'auto';
+
+                                // img.style.boxShadow = '0px 3px 10px rgba(0,0,0,0.5)';
+                                // img.style.Border = '20px solid red';
+                                div.appendChild(img);
+
+                                // img.style.borderRadius = '50%';
+
+                                $("#driverImage").on("error", function () {
+                                    $(this).attr('src', 'img_avatar.png');
+                                });
+
+                                var imgE = new Image();
+                                // var divE = document.getElementById('Ecircle');
+                                var divE = document.getElementById('imgBxGuard');
+                                imgE.id = "EscortImage";
+                                imgE.src = EscortImage;
+                                // imgE.style.width = '100%';
+                                imgE.style.width = '110px'
+                                imgE.style.height = '148px'
+                                imgE.style.borderTopLeftRadius = '24px'
+                                // imgE.style.width = '90px';
+                                // imgE.style.height = '90px';
+
+                                // imgE.style.borderRadius = '50%';
+                                // // img.style.height = 'auto';
+
+                                // imgE.style.boxShadow = '0px 3px 10px rgba(0,0,0,0.5)';
+                                // imgE.style.Border = '20px solid red';
+                                divE.appendChild(imgE);
+
+                                // img.style.borderRadius = '50%';
+
+                                $("#EscortImage").on("error", function () {
+                                    $(this).attr('src', 'images/user_image.png');
+                                });
+
+                            }
+                        });
+
+                    } function OnError2(request, status, error) {
+                        $("#loader").hide();
+                        $("#output").empty();
+                        $("#output").html(
+                            "Error: Connecting to server");
+
+                        $("#height").css("output", "2%");
+
+
+                    }
+
+                    $.ajax({
+                        type: "POST",
+                        username: "user1",
+                        password: "Acc@bang10",
+                        url: URL_RouteDetail,
+                        // data: "{RouteID: '" + routeid + "',flag:'3'}",
+                        data: "{RouteID: '" + routeid + "',flag:'" + b2bflag + "'}",
+                        crossDomain: true,
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: sucess1,
+                        error: err1
+                    });
+
+                    function sucess1(data, status) {
+                        $.each(JSON.parse(data), function (key, val) {
+                            console.log('::::::::::>' + val.trackingStatus);
+                            console.log(val.id);
+
+                            if (val.id == empid) {
+                                gender = val.Gender;
+                                console.log(gender);
+                                employeeid = val.employeeID;
+
+
+                                if ((val.CabNoShow == 0) && (clientid == '10' || clientid == '14' || clientid == '15')) {
+
+
+                                    $('#cabnoshow').show();
+
+                                }
+                                else {
+                                    $('#cabnoshow').hide();
+                                }
+
+                                if (val.tripType == 'D') {
+                                    $('#cabnoshow').hide();
+                                }
+
+                                if (clientid == '10' || clientid == '14' || clientid == '15') {
+                                    $("#sharebut").show();
+                                }
+                                else {
+                                    $("#sharebut").hide();
+                                }
+
+                                empname = val.empName;
+                                // emplatlng = new L.LatLng(val.lat, val.lng);
+                                emplatlng1 = { lat: val.lat, lng: val.lng };
+
+
+                                myTrackingStatus = val.trackingStatus
+                                if (myTrackingStatus != '----') {
+
+                                    document.getElementById('boarding_status').innerHTML = '<strong style="background-color: #42f474;border-radius: 5px;">' + myTrackingStatus.toUpperCase() + '</strong>';
+                                    $("#boarding_status").show();
+                                }
+                                else {
+                                    //document.getElementById('boarding_status').innerHTML = '<strong></strong>';
+                                    $("#boarding_status").hide();
+
+                                    //val.boardingOTP
+                                }
+
+                                OTP = val.boardingOTP;
+                                console.log(OTP);
+                                if (OTP != null) {
+                                    document.getElementById('Otp').innerHTML = '<strong>OTP: </strong>' + ' ' + OTP;
+                                }
+
+
+
+                                if (myTrackingStatus == "No-Show" || val.tripType == 'D') {
+                                    var call_btn = document.getElementById('call_btn');
+                                    call_btn.style.display = 'none';
+                                    var help_btn = document.getElementById('help_btn');
+                                    help_btn.style.display = 'inherit';
+                                    //  $("#Otp").hide();
+                                    //  $("#boarding_status").hide();
+                                    //clearInterval(etainterval);
+
+                                    $('#eta').hide();
+                                    $("#Otp").hide();
+
+
+
+                                } else if (myTrackingStatus == "Boarded" || val.tripType == 'D') {
+                                    var call_btn = document.getElementById('call_btn');
+                                    call_btn.style.display = 'none';
+                                    var help_btn = document.getElementById('help_btn');
+                                    help_btn.style.display = 'inherit';
+                                    $('#cabnoshow').hide();
+                                    // $("#Otp").hide();
+                                    //   $("#boarding_status").hide();
+                                    $('#eta').hide();
+                                    $("#Otp").hide();
+                                    //clearInterval(etainterval);
+
+
+
+                                }
+                                else if (myTrackingStatus == "De-Boarded" || val.tripType == 'D') {
+                                    var call_btn = document.getElementById('call_btn');
+                                    call_btn.style.display = 'none';
+                                    var help_btn = document.getElementById('help_btn');
+                                    help_btn.style.display = 'inherit';
+                                    $('#cabnoshow').hide();
+                                    // $("#Otp").hide();
+                                    //   $("#boarding_status").hide();
+                                    $('#eta').hide();
+                                    $("#Otp").hide();
+                                    //clearInterval(etainterval);
+
+
+
+                                }
+                                else {
+                                    var call_btn = document.getElementById('call_btn');
+                                    call_btn.style.display = 'inherit';
+                                    var help_btn = document.getElementById('help_btn');
+                                    help_btn.style.display = 'inherit';
+                                    $('#eta').show();
+                                    $("#Otp").show();
+                                }
+
+
+                                if (value1 == 's') {
+                                    var call_btn = document.getElementById('call_btn');
+                                    call_btn.style.display = 'none';
+                                    var help_btn = document.getElementById('help_btn');
+                                    help_btn.style.display = 'inherit';
+                                    //  $("#Otp").hide();
+                                    //  $("#boarding_status").hide();
+
+                                    //clearInterval(etainterval);
+
+                                    $('#eta').hide();
+                                    $("#Otp").hide(); 
+                                    $("#cabnoshow").hide();
+                                    $("#sharebut").hide();
+                                    $('#hamburgernav').hide();
+                                }
+
+                                var aTag = document.getElementById('aTag');
+                                aTag.setAttribute('data-rel', 'external');
+                                aTag.setAttribute('href', 'tel:' + tptContactNo[0]);
+
+
+
+                                $('#driver').on("click", function () {
+                                    console.log("driver clicked");
+                                    callLatch();
+                                });
+
+                                function callLatch() {
+                                    confirm1 = confirm("Do you wish to call the driver?");
+                                    if (confirm1 == true) {
+                                        callapi();
+                                    }
+                                }
+
+
+
+                                var modal = document.getElementById("myModal");
+
+                                // Get the image and insert it inside the modal - use its "alt" text as a caption
+                                var img = document.getElementById("driverImage");
+                                var modalImg = document.getElementById("img01");
+                                var captionText = document.getElementById("caption");
+
+
+                                try {
+                                    img.onclick = function () {
+                                        modal.style.display = "block";
+                                        modalImg.src = this.src;
+                                        captionText.innerHTML = this.alt;
+                                    }
+                                }
+                                catch { }
+
+
+                                // Get the <span> element that closes the modal
+                                var span = document.getElementsByClassName("close")[0];
+
+                                // When the user clicks on <span> (x), close the modal
+                                span.onclick = function () {
+                                    modal.style.display = "none";
+                                }
+
+
+
+                                var modal = document.getElementById("myModal");
+
+                                // Get the image and insert it inside the modal - use its "alt" text as a caption
+                                var img = document.getElementById("EscortImage");
+                                var modalImg = document.getElementById("img01");
+                                var captionText = document.getElementById("caption");
+
+
+                                try {
+                                    img.onclick = function () {
+                                        modal.style.display = "block";
+                                        modalImg.src = this.src;
+                                        captionText.innerHTML = this.alt;
+                                    }
+                                }
+                                catch { }
+
+                                // Get the <span> element that closes the modal
+                                var span = document.getElementsByClassName("close")[0];
+
+                                // When the user clicks on <span> (x), close the modal
+                                span.onclick = function () {
+                                    modal.style.display = "none";
+                                }
+                                function callapi() {
+                                    $("#loader").show();
+                                    $.ajax({
+                                        cache: false,
+                                        type: "POST",
+                                        url: URL_CallingAPI,
+                                        data: "{empid: '" +
+                                            empid +
+                                            "',drivermobile: '" +
+                                            driver_contact[0] +
+                                            "',type:'sun'}",
+                                        crossDomain: true,
+                                        contentType: "application/json; charset=utf-8",
+                                        dataType: "json",
+                                        success: OnSuccess2,
+                                        error: OnError2
+                                    });
+
+                                    function OnSuccess2(data, status) {
+                                        $("#loader").hide();
+                                        $("#output").empty();
+                                        alert("Please wait while your call is being connected");
+                                        $.each(JSON.parse(data), function (key, val) {
+                                            //call????
+                                        });
+                                    }
+
+                                    function OnError2(request, status, error) {
+                                        $("#loader").hide();
+                                        $("#output").empty();
+                                        $("#output").html(request.statusText);
+                                    }
+                                }
+                                var lathome = val.lat;
+                                var lnghome = val.lng;
+                                // toloc = lnghome + ',' + lathome;
+
+                                toloc = val.lat + ',' + val.lng;
+                            }
+                        });
+
+
+
+
+
+
+                        map = new MapmyIndia.Map('map', {
+                           center: center,
+                           zoomControl: true,
+                           hybrid: false,
+                           search: false,
+                           location: false
+
+                        });
+
+
+
+
+                        $('#flsc_dv').hide();
+
+                        function addMarker(position, icon, title, i) {
+                           /*** position must be instance of L.LatLng ***/
+
+                           if (icon == '') {
+                               var mk;
+                               /***Marker with a default icon and optional parameter draggable, title***/
+                               mk = new L.Marker(position, {
+                                   draggable: true,
+                                   title: title
+                               });
+                           } else {
+                               /***Marker with a custom icon and optional parameter draggable, title***/
+                               var mk;
+                               mk = new L.Marker(position, {
+                                   icon: icon,
+                                   draggable: true,
+                                   title: title
+                               });
+                           }
+                           /*Add the marker to the map*/
+                           map.addLayer(mk);
+                           /**Marker events**/
+
+                           return mk;
+                        }
+
+
+                        var icon = L.icon({
+                           iconUrl: "home.png",
+                           iconRetinaUrl: 'home.png',
+                           iconSize: [30, 30]
+                        });
+
+                        setTimeout(function () {
+                           marker.push(addMarker(emplatlng, icon, "Home", '').addTo(map));
+                           map.panTo(pp[0]);
+                        }, 3000);
+
+                        	map.on("load", function (e)
+                        {
+
+                        });
+
+
+
+
+                        $('#recentre').on("click", function () {
+                           map.panTo(pp[0]);
+                           setTimeout(function () {
+                               map.setZoom(16);
+                           }, 500);
+                        });
+
+                        // $('#recentre').on("click", function () {
+                        //     nbmap.map.setCenter({ lat: driverlat, lng: driverlng });
+                        //     setTimeout(function () {
+                        //         nbmap.map.setZoom(10);
+                        //     }, 500);
+                        // });
+
+
+                        hi();
+
+                        function hi() {
+                            $.ajax({
+                                type: "POST",
+                                username: "user1",
+                                password: "Acc@bang10",
+                                url: URL_GetGPSLogger,
+                                data: "{deviceId: '" + routeid + "',vendorid:'0'}",
+                                crossDomain: true,
+                                contentType: "application/json; charset=utf-8",
+                                dataType: "json",
+                                success: OnSuccess5,
+                                error: OnError5
+                            });
+
+                            function OnSuccess5(data, status) {
+
+                                $.each(JSON.parse(data), function (key, val) {
+                                    $('#recentre').show();
+                                    console.log(val.lat);
+                                    var lat = val.lat;
+                                    var lng = val.lng;
+                                    if (lat == null || lat == undefined) {
+                                        $("#popup").show();
+                                        //  alert ("Your Cab's current location cannot be determined as we do not seem to be receiving data from the Driver's mobile.Please contact the Driver to know his exact location.")
+                                    }
+                                    console.log("null lat" + lat);
+                                    var latlng = [];
+                                    latlng.push(lat);
+                                    latlng.push(lng);
+                                    var lnglat = [];
+                                    lnglat.push(lng);
+                                    lnglat.push(lat);
+                                    fromloc = lnglat;
+                                    pp.push(latlng);
+                                    pp.push(latlng);
+                                    driverlat = val.lat;
+                                    driverlng = val.lng;
+                                    position = [driverlat, driverlng];
+
+                                    map.panTo(pp[0]);
+
+                                    setTimeout(function () {
+                                       map.setZoom(16);
+                                    }, 500);
+
+
+
+                                    etainterval = setInterval(function () {
+                                        if (toloc == "null,null") {
+                                            return;
+                                        }
+                                        $.ajax({
+                                            cache: false,
+                                            type: "GET",
+                                            url: "https://api.nextbillion.io/distancematrix/json?origins=" + fromloc + "&destinations=" + toloc + "&mode=car&key=88db710a74e44bf59a27b365912e06bb&avoid=highway",
+                                            crossDomain: true,
+                                            contentType: "application/json; charset=utf-8",
+                                            dataType: "json",
+                                            success: OnSuccess,
+                                            error: OnError
+                                        });
+
+                                        function OnSuccess(data, status) {
+                                            console.log(data.rows[0].elements[0].duration);
+                                            var eta = secondsToHms(data.rows[0].elements[0].duration.value);
+                                            document.getElementById('eta').innerHTML = '<strong>' + eta + '</strong>';
+                                        }
+                                        function OnError(request, status, error) {
+                                        }
+
+                                    }, 30000);
+
+                                    ShowMap();
+
+
+
+                                    // drawCarMarkerOnPolyline();
+                                });
+                            }
+
+                            function OnError5(request, status, error) {
+                                //      $("#output").html(request.statusText);
+
+
+                            }
+                        }
+
+
+
+                        //function drawCarMarkerOnPolyline(hi) {
+                        //    removePolyline();
+                        //    var offset = 0; //intial offset value
+                        //    var w = 14, h = 33;
+                        //    //Polyline css
+                        //    var linecss = {
+                        //        color: 'transparent',
+                        //        weight: 3,
+                        //        opacity: 1
+                        //    };
+                        //    line = L.polyline(pp, linecss).addTo(map); //add polyline on map
+                        //    decorator = L.polylineDecorator(line).addTo(map);
+                        //    //create a polyline decorator instance.
+
+                        //    //offset and repeat can be each defined as a number,in pixels,or in percentage of the line's length,as a string
+                        //    interval = window.setInterval(function () {
+                        //        decorator.setPatterns([{
+                        //            offset: offset + '%', //Offset value for first pattern symbol,from the start point of the line. Default is 0.
+                        //            repeat: 0, //repeat pattern at every x offset. 0 means no repeat.
+                        //            //Symbol type.
+                        //            symbol: L.Symbol.marker({
+                        //                rotate: true, //move marker along the line. false value may cause the custom marker to shift away from a curved polyline. Default is false.
+                        //                markerOptions: {
+                        //                    icon: L.icon({
+                        //                        iconUrl: 'https://www.mapmyindia.com/api/advanced-maps/doc/sample/images/car.png',
+                        //                        iconAnchor: [w / 2, h / 2], //Handles the marker anchor point. For a correct anchor point [ImageWidth/2,ImageHeight/2]
+                        //                        iconSize: [14, 33]
+                        //                    })
+                        //                }
+                        //            })
+                        //        }
+                        //        ]);
+                        //        if ((offset += 0.33) > 100) //Sets offset. Smaller the value smoother the movement.
+                        //        {//offset = 0;
+                        //        }
+                        //    }, 10); //Time in ms. Increases/decreases the speed of the marker movement on decrement/increment of 1 respectively. values should not be less than 1.
+                        //    poly.push(line);
+                        //    poly.push(decorator);
+
+                        //    // map.fitBounds(line.getBounds());
+                        //    setInterval(function () {
+                        //        if (pp.length < 3) {
+                        //            if (myTrackingStatus != "De-Boarded") {
+                        //                hi2();
+                        //            }
+                        //        }
+                        //    }, 15000);
+
+                        //    function hi2() {
+                        //        $.ajax({
+                        //            type: "POST",
+                        //            username: "user1",
+                        //            password: "Acc@bang10",
+                        //            url: URL_GetGPSLogger,
+                        //            data: "{deviceId: '" + routeid + "',vendorid:'0'}",
+                        //            crossDomain: true,
+                        //            contentType: "application/json; charset=utf-8",
+                        //            dataType: "json",
+                        //            success: OnSuccess6,
+                        //            error: OnError6
+                        //        });
+
+                        //        function OnSuccess6(data, status) {
+                        //            $.each(JSON.parse(data), function (key, val) {
+                        //                console.log(val.lat);
+                        //                var lat = val.lat;
+                        //                var lng = val.lng;
+                        //                var latlng = [];
+                        //                latlng.push(lat);
+                        //                latlng.push(lng);
+                        //                var lnglat = [];
+                        //                lnglat.push(lng);
+                        //                lnglat.push(lat);
+                        //                fromloc = lnglat;
+                        //                map.panTo(pp[0]);
+
+
+                        //                if (latlng[0] != pp[pp.length - 1][0]) {
+                        //                    pp.push(latlng);
+                        //                    pp.shift();
+                        //                    drawCarMarkerOnPolyline();
+                        //                }
+                        //            });
+                        //        }
+
+                        //        function OnError6(request, status, error) {
+                        //            //      $("#output").html(request.statusText);
+
+
+                        //        }
+
+                        //    }
+                        //}
+
+                        //var removePolyline = function () {
+                        //    var polylength = poly.length;
+                        //    if (polylength > 0) {
+                        //        for (var i = 0; i < polylength; i++) {
+                        //            if (poly[i] !== undefined) {
+                        //                map.removeLayer(poly[i]);
+                        //            }
+                        //        }
+                        //        poly = new Array();
+                        //        window.clearInterval(interval);
+                        //    }
+                        //}
+
+                        // function ShowMap() {
+                        //     (function () {
+                        //         nextbillion.setApiKey("88db710a74e44bf59a27b365912e06bb");
+                        //         nbmap = new nextbillion.maps.Map({
+                        //             container: document.getElementById("map"),
+                        //             style: "https://api.nextbillion.io/maps/streets/style.json",
+                        //             zoom: 10,
+                        //             center: { lat: driverlat, lng: driverlng },
+                        //         });
+                        //         var nav = new nextbillion.maps.NavigationControl();
+
+                        //         nbmap.map.addControl(nav, 'bottom-left');
+
+                        //         nbmap.on("load", function () {
+                        //             addCustomMarkerWithDom(nbmap);
+                        //         });
+                        //     })();
+                        // }
+                        // function addCustomMarkerWithDom(nbmap) {
+                        //     const popup = new nextbillion.maps.Popup({
+                        //         offset: 10,
+                        //         closeButton: false
+                        //     }).setText("Your Cab");
+                        //     const el = document.createElement("div");
+                        //     el.className = "marker";
+                        //     el.style.backgroundImage =
+                        //         "url('car.png')";
+                        //     el.style.backgroundSize = "cover";
+                        //     el.style.width = "25px";
+                        //     el.style.height = "25px";
+                        //     const marker = new nextbillion.maps.Marker({
+                        //         element: el
+                        //     })
+                        //         .setLngLat({ lat: driverlat, lng: driverlng })
+                        //         //.setPopup(popup)
+                        //         .addTo(nbmap.map);
+                        //     marker.togglePopup();
+
+                        //     setInterval(function () {
+                        //         $.ajax({
+                        //             type: "POST",
+                        //             username: "user1",
+                        //             password: "Acc@bang10",
+                        //             url: URL_GetGPSLogger,
+                        //             data: "{deviceId: '" + routeid + "',vendorid:'0'}",
+                        //             crossDomain: true,
+                        //             contentType: "application/json; charset=utf-8",
+                        //             dataType: "json",
+                        //             success: OnSuccess5,
+                        //             error: OnError5
+                        //         });
+
+                        //         function OnSuccess5(data, status) {
+                        //             $.each(JSON.parse(data), function (key, val) {
+                        //                 driverlat = val.lat;
+                        //                 driverlng = val.lng;
+                        //                 var lnglat = [];
+                        //                 lnglat.push(driverlat);
+                        //                 lnglat.push(driverlng);
+                        //                 fromloc = lnglat;
+                        //                 transition();
+                        //                 nbmap.map.setCenter({ lat: driverlat, lng: driverlng });
+                        //             });
+                        //         }
+                        //         function OnError5(request, status, error) {
+                        //         }
+                        //     }, 10000);
+
+                        //     var numDeltas = 200;
+                        //     var delay = 10; //milliseconds
+                        //     var i = 0;
+                        //     var deltaLat;
+                        //     var deltaLng;
+                        //     function transition() {
+                        //         i = 0;
+                        //         deltaLat = (driverlat - position[0]) / numDeltas;
+                        //         deltaLng = (driverlng - position[1]) / numDeltas;
+                        //         var p1 = turf.point([position[1], position[0]]);
+                        //         var p2 = turf.point([driverlng, driverlat]);
+                        //         var bearing = turf.bearing(p1, p2);
+                        //         marker.setRotation(bearing + 90);
+                        //         moveMarker();
+                        //     }
+
+                        //     function moveMarker() {
+                        //         position[0] += deltaLat;
+                        //         position[1] += deltaLng;
+                        //         marker.setLngLat({ lat: position[0], lng: position[1] })
+                        //         if (i != numDeltas) {
+                        //             i++;
+                        //             setTimeout(moveMarker, delay);
+                        //         }
+                        //     }
+                        // }
+
+                    }
+                    function err1(request, status, error) {
+                        console.log('ERROR')
+                    }
+                });
+            }
+
+            function OnError3(request, status, error) {
+                //      $("#output").html(request.statusText);
+                $("#loader").hide();
+                $("#output").empty();
+                $("#output").html(request.statusText);
+            }
+        }
+
+        else {
+            $("#loader").hide();
+            $("#output").empty();
+            $("#output").html("Incorrect Parameters");
+
+        }
+
+
+
+        locupdate = setInterval(function () { //Iterative call for marker movement, as well as the interval
+            Routedet();
+        }, 7000);
+
+        function Routedet() {
+            $.ajax({
+                type: "POST",
+                username: "user1",
+                password: "Acc@bang10",
+                url: URL_RouteDetail,
+                // data: "{RouteID: '" + routeid + "',flag:'3'}",
+                data: "{RouteID: '" + routeid + "',flag:'" + b2bflag + "'}",
+                crossDomain: true,
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: sucess1,
+                error: err1
+            });
+
+            function sucess1(data, status) {
+                $.each(JSON.parse(data), function (key, val) {
+                    if (val.id == empid) {
+                        employeeid = val.employeeID;
+                        gender = val.Gender;
+                        if ((val.CabNoShow == 0) && (clientid == '10' || clientid == '14' || clientid == '15')) {
+                            $('#cabnoshow').show();
+                        }
+                        else {
+                            $('#cabnoshow').hide();
+                        }
+                        if (val.tripType == 'D') {
+                            $('#cabnoshow').hide();
+                        }
+
+                        if (clientid == '10' || clientid == '14' || clientid == '15') {
+                            $("#sharebut").show();
+                        }
+                        else {
+                            $("#sharebut").hide();
+                        }
+
+                        myTrackingStatus = val.trackingStatus
+                        if (myTrackingStatus != '----') {
+                            $("#boarding_status").show();
+                            document.getElementById('boarding_status').innerHTML = '<strong style="background-color: #42f474;border-radius: 5px;">' + myTrackingStatus.toUpperCase() + '</strong>';
+
+                        } else {
+
+
+                            // document.getElementById('boarding_status').innerHTML = '<strong></strong>';
+                            $("#boarding_status").hide();
+
+
+                        }
+                        OTP = val.boardingOTP;
+                        if (OTP != '') {
+                            document.getElementById('Otp').innerHTML = '<strong>OTP: </strong>' + ' ' + OTP;
+
+                        }
+
+
+
+                        if (myTrackingStatus == "No-Show") {
+                            var call_btn = document.getElementById('call_btn' || val.tripType == 'D');
+                            call_btn.style.display = 'none';
+                            var help_btn = document.getElementById('help_btn');
+                            help_btn.style.display = 'inherit';
+                            //  $("#Otp").hide();
+                            //  $("#boarding_status").hide();
+
+                            clearInterval(etainterval);
+
+                            $('#eta').hide();
+                            $("#Otp").hide();
+                            clearInterval(locupdate);
+
+                        } else if (myTrackingStatus == "Boarded" || val.tripType == 'D') {
+                            var call_btn = document.getElementById('call_btn');
+                            call_btn.style.display = 'none';
+                            var help_btn = document.getElementById('help_btn');
+                            help_btn.style.display = 'inherit';
+                            $('#cabnoshow').hide();
+                            // $("#Otp").hide();
+                            //   $("#boarding_status").hide();
+                            $('#eta').hide();
+                            $("#Otp").hide();
+                            clearInterval(etainterval);
+
+                            clearInterval(locupdate);
+
+                        }
+                        else if (myTrackingStatus == "De-Boarded" || val.tripType == 'D') {
+                            var call_btn = document.getElementById('call_btn');
+                            call_btn.style.display = 'none';
+                            var help_btn = document.getElementById('help_btn');
+                            help_btn.style.display = 'inherit';
+                            $('#cabnoshow').hide();
+                            // $("#Otp").hide();
+                            //   $("#boarding_status").hide();
+                            $('#eta').hide();
+                            $("#Otp").hide();
+                            clearInterval(etainterval);
+                            $("#sharebut").hide();
+
+                            clearInterval(locupdate);
+
+                        }
+
+                        else {
+                            var call_btn = document.getElementById('call_btn');
+                            call_btn.style.display = 'inherit';
+                            var help_btn = document.getElementById('help_btn');
+                            help_btn.style.display = 'inherit';
+                            $('#eta').show();
+                            $("#Otp").show();
+                        }
+
+
+                        if (value1 == 's') {
+                            var call_btn = document.getElementById('call_btn');
+                            call_btn.style.display = 'none';
+                            var help_btn = document.getElementById('help_btn');
+                            help_btn.style.display = 'inherit';
+                            //  $("#Otp").hide();
+                            //  $("#boarding_status").hide();
+
+                            clearInterval(etainterval);
+
+                            $('#eta').hide();
+                            $("#Otp").hide();
+                            $("#cabnoshow").hide();
+                            $("#sharebut").hide();
+                            $('#hamburgernav').hide();
+
+                        }
+
+
+                        var aTag = document.getElementById('aTag');
+                        aTag.setAttribute('data-rel', 'external');
+                        aTag.setAttribute('href', 'tel:' + tptContactNo[0]);
+
+                    }
+
+                });
+
+
+            }
+
+            function err1(request, status, error) {
+                console.log('ERROR')
+
+            }
+
+        }
+
+                    //   window.onload = function () {
+
+
+
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/custom.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script> 
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
+
+
+</body>
+
+</html>
