@@ -1091,7 +1091,7 @@ html, body {
         <div id="output"></div>
     </div>
     
-    <div id="map"></div>
+    <div id="map" tabindex="0" aria-label="Cab location map. Press Enter or tap to hear the current cab location."></div>
 
     <!-- First Modal -->
     <div class="modal fade" id="firstModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -1448,6 +1448,9 @@ html, body {
             <img src="images/qr_scanner.png" alt="" width="50vw" height="50vh" id="qrCodeButton" style="display: none;">        
         </span>
     </div>
+
+    <!-- ARIA live region for screen reader announcements -->
+    <div id="live-region" aria-live="polite" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;"></div>
 
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script src="js/bootstrap.bundle.min.js"></script>
@@ -2279,7 +2282,6 @@ async updateEmployeeETAs(driverLat, driverLng, employees) {
         }
 
         function createUrlFromClientDetails(data){
-            console.log("base url: ", data.trackurl);
             BASE_URL = data.trackurl;
             URL_CabValidation = BASE_URL + "MyCabValidation";
             URL_ProfilePicture = data.photourl;
@@ -3323,6 +3325,82 @@ async function calculateEtaOpenSource(stopsOnRoute, currentEmployee) {
             }
 
         }, 3000);        
+    </script>
+
+    <!-- Accessibility: Announce cab location on map keyboard/tap for blind users -->
+    <script>
+    (function() {
+        const mapDiv = document.getElementById('map');
+        if (mapDiv) {
+            mapDiv.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    announceCabLocation();
+                }
+            });
+            mapDiv.addEventListener('click', function(e) {
+                announceCabLocation();
+            });
+        }
+
+        async function announceCabLocation() {
+            // Use the latest cab coordinates
+            const lat = window.driverlat;
+            const lng = window.driverlng;
+            if (!lat || !lng) {
+                announce('Cab location is not available at the moment.');
+                return;
+            }
+            const apiKey = "AIzaSyDKatXVfQNHCj7iNP95PhsOkO9vFmYI-bA";
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.status === 'OK' && data.results.length > 0) {
+                    const address = data.results[0].formatted_address;
+                    announce('Current cab location: ' + address);
+                } else {
+                    announce('Unable to retrieve the cab address.');
+                }
+            } catch (err) {
+                announce('Error fetching cab address.');
+            }
+        }
+
+        function announce(message) {
+            const liveRegion = document.getElementById('live-region');
+            if (liveRegion) liveRegion.textContent = message;
+            // Optional: Use speech synthesis for immediate feedback
+            if ('speechSynthesis' in window) {
+                const utter = new SpeechSynthesisUtterance(message);
+                window.speechSynthesis.speak(utter);
+            }
+        }
+    })();
+    </script>
+
+    <!-- Ensure all images have alt text and all buttons/inputs have accessible labels -->
+    <script>
+    (function() {
+        // Add alt text to images if missing
+        document.querySelectorAll('img').forEach(function(img) {
+            if (!img.hasAttribute('alt') || img.getAttribute('alt') === '') {
+                img.setAttribute('alt', 'Image');
+            }
+        });
+        // Add aria-label to buttons if missing
+        document.querySelectorAll('button').forEach(function(btn) {
+            if (!btn.hasAttribute('aria-label') && btn.textContent.trim() === '') {
+                btn.setAttribute('aria-label', 'Button');
+            }
+        });
+        // Add aria-label to inputs if missing
+        document.querySelectorAll('input').forEach(function(input) {
+            if (!input.hasAttribute('aria-label') && !input.hasAttribute('placeholder')) {
+                input.setAttribute('aria-label', 'Input field');
+            }
+        });
+    })();
     </script>
 </body>
 </html>
