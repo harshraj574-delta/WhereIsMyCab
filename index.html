@@ -1227,10 +1227,7 @@ html, body {
                 </div>
             </div>
         </div>
-        <!-- <div id="etaListContainer" class="bg-light p-2 rounded mt-2" style="margin: 0 20px;">
-    <h6 class="fw-bold">Upcoming Stops ETA:</h6>
-    <ul id="etaList" class="list-unstyled mb-0"></ul>
-</div> -->
+
     </div>
 
     <div data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom1"
@@ -1456,1951 +1453,1948 @@ html, body {
     <script src="js/bootstrap.bundle.min.js"></script>
     
     <script>
-       
-//  FINAL REVISED OpenSourceMapService: Robust Rotation with Custom DivIcon
-class OpenSourceMapService {
-    constructor() {
-        this.map = null;
-        this.carMarker = null;
-        this.routePolyline = null;
-        this.antPath = null;
-        this.employeeMarkers = [];
-        this.previousLatLng = null; // To track previous position for rotation
-    }
-
-    // Initialize Leaflet with OpenStreetMap
-    initializeMap(containerId = 'map') {
-        this.map = L.map(containerId, {
-            zoom: 14,
-            zoomControl: false,
-            scrollWheelZoom: false,   
-            doubleClickZoom: true,   
-            boxZoom: true,           
-            keyboard: true,          
-            dragging: true,          
-            touchZoom: true,
-        });
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19,
-        }).addTo(this.map);
-        this.map.scrollWheelZoom.enable();
-        return this.map;
-    }
-
-    // Add employee home marker
-    addEmployeeMarker(lat, lng, iconUrl = 'images/home.png') {
-        const homeIcon = L.icon({
-            iconUrl: iconUrl,
-            iconSize: [25, 25],
-            iconAnchor: [12, 12],
-        });
-        const marker = L.marker([lat, lng], { icon: homeIcon }).addTo(this.map);
-        this.employeeMarkers.push(marker);
-        return marker;
-    }
-
-    // Add car marker using L.divIcon with a rotatable inner image
-    addCarMarker(lat, lng, isShuttle = false) {
-        const iconUrl = isShuttle ? 'images/shuttle.png' : 'images/car.svg';
-        const iconSize = isShuttle ? [48, 48] : [38, 38];
-        const halfWidth = iconSize[0] / 2;
-        const halfHeight = iconSize[1] / 2;
-
-        // Create a custom divIcon
-        const customCarIcon = L.divIcon({
-            className: 'car-marker-container', // Main container controlled by Leaflet
-            html: `<img src="${iconUrl}" style="width:100%; height:100%; transform-origin: center; display: block;" class="car-icon-rotatable">`, // Inner image for rotation
-            iconSize: iconSize,
-            iconAnchor: [halfWidth, halfHeight], // Anchor in the center
-            popupAnchor: [0, -halfHeight] // Popup position relative to anchor
-        });
-
-        if (this.carMarker) {
-            this.map.removeLayer(this.carMarker);
-        }
-
-        if (typeof L.Marker.movingMarker === 'function') {
-            this.carMarker = L.Marker.movingMarker([[lat, lng]], [], {
-                icon: customCarIcon,
-                autostart: false,
-            }).addTo(this.map);
-            // console.log(console.log("Using L.Marker.movingMarker for car animation."););
-        } else {
-            this.carMarker = L.marker([lat, lng], {
-                icon: customCarIcon
-            }).addTo(this.map);
-            console.warn("L.Marker.movingMarker is not available. Using standard L.marker (no animation).");
-        }
-        
-        this.previousLatLng = L.latLng(lat, lng);
-        return this.carMarker;
-    }
-
-    // Helper to get the inner rotatable image element
-    _getRotatableCarIconElement() {
-        // The movingMarker's _icon is the outer div.
-        // We need to find the img inside it.
-        return this.carMarker && this.carMarker._icon ? 
-               this.carMarker._icon.querySelector('.car-icon-rotatable') : null;
-    }
-
-    // Create an animated route
-    createAnimatedRoute(waypoints, carPosition) {
-        this.clearRoute();
-        if (waypoints.length < 2) return;
-
-        // this.routePolyline = L.polyline(waypoints, {
-        //     color: '#4285F4',
-        //     weight: 4,
-        //     opacity: 0.8,
-        // }).addTo(this.map);
-
-        // this.antPath = L.polyline.antPath(waypoints, {
-        //     color: '#FF6B6B',
-        //     weight: 2,
-        //     opacity: 0.6,
-        //     delay: 1000,
-        //     dashArray: [10, 20],
-        // }).addTo(this.map);
-
-        this.addCarOnRoute(waypoints, carPosition);
-        this.map.fitBounds(this.routePolyline.getBounds(), { padding: [20, 20] });
-    }
-
-    // Add the car to the route and start animation
-    addCarOnRoute(waypoints, carPosition) {
-        if (!waypoints.length) return;
-        this.addCarMarker(carPosition[0], carPosition[1]);
-        this.animateCarAlongRoute(waypoints);
-    }
-
-    // Animate the car along the full route with rotation
-    animateCarAlongRoute(waypoints) {
-        if (!this.carMarker || waypoints.length < 2) return;
-
-        if (typeof this.carMarker.moveTo !== 'function') {
-            console.warn("Car marker is not a MovingMarker instance. Skipping route animation.");
-            return;
-        }
-
-        const durations = [];
-        for (let i = 0; i < waypoints.length - 1; i++) {
-            const distance = this.calculateDistance(waypoints[i], waypoints[i + 1]);
-            const duration = (distance / 30) * 3600 * 1000; // Assume 30 km/h for animation speed
-            durations.push(Math.max(duration, 1000));
-        }
-
-        this.carMarker.setLatLng(waypoints);
-        this.carMarker.setDurations(durations);
-        this.carMarker.start();
-
-        this.carMarker.on('move', (e) => {
-            const currentLatLng = e.latlng;
-            // Only rotate if there was a previous position to calculate bearing from
-            if (this.previousLatLng) {
-                const bearing = this._calculateBearing(
-                    this.previousLatLng.lat, this.previousLatLng.lng,
-                    currentLatLng.lat, currentLatLng.lng
-                );
-                // 🔧 FIX: Target the inner rotatable element for rotation
-                const rotatableElement = this._getRotatableCarIconElement();
-                if (rotatableElement) {
-                    rotatableElement.style.transform = `rotate(${bearing}deg)`;
-                }
+        //  FINAL REVISED OpenSourceMapService: Robust Rotation with Custom DivIcon
+        class OpenSourceMapService {
+            constructor() {
+                this.map = null;
+                this.carMarker = null;
+                this.routePolyline = null;
+                this.antPath = null;
+                this.employeeMarkers = [];
+                this.previousLatLng = null; // To track previous position for rotation
             }
-            this.previousLatLng = currentLatLng;
-        });
-    }
-
-    // Update car position with rotation
-    updateCarPosition(newLat, newLng, animate = true) {
-        if (!this.carMarker) {
-            this.addCarMarker(newLat, newLng);
-            return;
-        }
-
-        const newLatLng = L.latLng(newLat, newLng);
         
-        if (animate && typeof this.carMarker.moveTo === 'function') {
-            const currentPos = this.carMarker.getLatLng();
-            const distance = currentPos.distanceTo(newLatLng);
-            const duration = Math.max((distance / 25) * 1000, 2000); // Assume 25 m/s
-
-            // Calculate bearing from current position to new position
-            const bearing = this._calculateBearing(
-                currentPos.lat, currentPos.lng,
-                newLat, newLng
-            );
-            
-            // 🔧 FIX: Target the inner rotatable element for rotation
-            const rotatableElement = this._getRotatableCarIconElement();
-            if (distance > 1 && rotatableElement) { 
-                rotatableElement.style.transform = `rotate(${bearing}deg)`;
+            // Initialize Leaflet with OpenStreetMap
+            initializeMap(containerId = 'map') {
+                this.map = L.map(containerId, {
+                    zoom: 14,
+                    zoomControl: false,
+                    scrollWheelZoom: false,   
+                    doubleClickZoom: true,   
+                    boxZoom: true,           
+                    keyboard: true,          
+                    dragging: true,          
+                    touchZoom: true,
+                });
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19,
+                }).addTo(this.map);
+                this.map.scrollWheelZoom.enable();
+                return this.map;
             }
-
-            this.carMarker.moveTo(newLatLng, duration);
-            this.previousLatLng = newLatLng; // Update previous position for next bearing calculation
-        } else {
-            this.carMarker.setLatLng(newLatLng);
-            this.previousLatLng = newLatLng; // Update previous position even if not animating
-        }
-
-        this.map.panTo(newLatLng);
-    }
-    
-    // Helper to calculate bearing between two points
-    _calculateBearing(lat1, lon1, lat2, lon2) {
-        const toRadians = (deg) => deg * Math.PI / 180;
-        const toDegrees = (rad) => rad * 180 / Math.PI;
-
-        const φ1 = toRadians(lat1);
-        const φ2 = toRadians(lat2);
-        const Δλ = toRadians(lon2 - lon1);
-
-        const y = Math.sin(Δλ) * Math.cos(φ2);
-        const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-
-        let bearing = toDegrees(Math.atan2(y, x));
-        return (bearing + 360) % 360;
-    }
-
-    
-    // Add markers for each employee stop
-    addRouteMarkers(employeeData) {
-        employeeData.forEach(employee => {
-            if (employee.lat && employee.lng) {
-                const iconUrl = employee.trackingStatus === 'Boarded' 
-                    ? `images/boarded/number-${employee.stopNo}.png`
-                    : `images/not_boarded/number-${employee.stopNo}.png`;
-
-                const markerIcon = L.icon({
+        
+            // Add employee home marker
+            addEmployeeMarker(lat, lng, iconUrl = 'images/home.png') {
+                const homeIcon = L.icon({
                     iconUrl: iconUrl,
-                    iconSize: [24, 24],
+                    iconSize: [25, 25],
                     iconAnchor: [12, 12],
                 });
-
-                const marker = L.marker([employee.lat, employee.lng], { 
-                    icon: markerIcon 
-                }).addTo(this.map);
-
-                marker.bindPopup(`
-                    <div>
-                        <strong>${employee.empName || 'Employee'}</strong><br>
-                        Stop: ${employee.stopNo}<br>
-                        Status: ${employee.trackingStatus}
-                    </div>
-                `);
+                const marker = L.marker([lat, lng], { icon: homeIcon }).addTo(this.map);
                 this.employeeMarkers.push(marker);
+                return marker;
             }
-        });
-    }
-
-    // Calculate distance between two points (using Leaflet's built-in method for LatLng objects)
-    calculateDistance(point1, point2) {
-        return L.latLng(point1).distanceTo(L.latLng(point2)) / 1000; // returns distance in km
-    }
-
-    // Clear existing route layers
-    clearRoute() {
-        if (this.routePolyline) this.map.removeLayer(this.routePolyline);
-        if (this.antPath) this.map.removeLayer(this.antPath);
-        this.employeeMarkers.forEach(marker => this.map.removeLayer(marker));
-        this.routePolyline = null;
-        this.antPath = null;
-        this.employeeMarkers = [];
-    }
-
-    // Create a simple straight-line route
-    createSimpleRoute(start, waypoints, end) {
-        const allPoints = [start, ...waypoints, end];
-        this.createAnimatedRoute(allPoints, start);
-        return allPoints;
-    }
-
-    // In OpenSourceMapService
-
-async fetchLiveETAs(driverLat, driverLng, employees, city = "delhi") {
-    const coords = [[driverLng, driverLat], ...employees.map(e => [e.lng, e.lat])];
-
-    try {
-        const response = await fetch('https://mapapi.etmsonline.in/table?annotations=duration,distance', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                city,
-                coordinates: coords
-            })
-        });
-        const data = await response.json();
-
-        if (data && data.durations && data.durations.length) {
-            return data.durations[0]; // first row: driver to employees
-        }
-        return [];
-    } catch (error) {
-        console.error("Error fetching ETA from OSRM:", error);
-        return [];
-    }
-}
-
-updateEtaListUI(employees, durations) {
-    const etaListEl = document.getElementById('etaList');
-    if (!etaListEl) return;
-
-    // Clear previous
-    etaListEl.innerHTML = '';
-
-    durations.forEach((seconds, index) => {
-        const etaMins = Math.round(seconds / 60);
-        const emp = employees[index];
-        const li = document.createElement('li');
-        li.className = 'mb-1';
-        li.innerHTML = `
-            <strong>${emp.empName || 'Employee'}</strong> 
-            (Stop ${emp.stopNo}): 
-            ETA <span class="badge bg-success">${etaMins} mins</span>
-        `;
-        etaListEl.appendChild(li);
-    });
-}
-
-
-async updateEmployeeETAs(driverLat, driverLng, employees) {
-    // const durations = await this.fetchLiveETAs(driverLat, driverLng, employees, "delhi");
-    // durations.forEach((seconds, index) => {
-    //     const etaMins = Math.round(seconds / 60);
-    //     const emp = employees[index];
-    //     if (emp.marker) {
-    //         emp.marker.setPopupContent(`
-    //             <div>
-    //                 <strong>${emp.empName || 'Employee'}</strong><br>
-    //                 Stop: ${emp.stopNo}<br>
-    //                 Status: ${emp.trackingStatus}<br>
-    //                 ETA: ${etaMins} mins
-    //             </div>
-    //         `);
-    //     }
-    // });
-
-    // ✏ Also update list in UI
-    // this.updateEtaListUI(employees, durations);
-}
-
-
-
-    centerMap(lat, lng, zoom = 14) {
-        this.map.setView([lat, lng], zoom);
-    }
-
-    panTo(lat, lng) {
-        this.map.panTo([lat, lng]);
-    }
-}
-
-// Global variables
-        var BASE_URL;
-        var URL_CabValidation;
-        var URL_ProfilePicture;
-        var URL_CallingApi;
-        var URL_RouteInfo;
-        var URL_RouteDetail;
-        var URL_RouteDetailShuttle;
-        var URL_GetGpsLogger;
-        var URL_UpdateCabNoShow;
-        var URL_UpdateTrackingSelf;
-
-        var directionsService;
-        var distanceMatrixService;
-        var directionsRenderer;
-        var value;
-        var value1;
-        var vs;
-        var routeid;
-        var empid;
-        var clientid;
-        var locupdate;
-        var showMapUpdate;
-        var facility;
-        var cabnoshowradius;
-        var driver_contact = [];
-        var driver_contact1;
-        var empname;
-        var emp_contact;
-        var homelatlng;
-        var profileurl;
-        var EscortImage;
-        var driverName;
-        var vehicleRegNo = [];
-        var vehicleType;
-        var tptContactNo;
-        var b2bFlag = 1;
-        var emplatlng1;
-        var emplatlng;
-        var pp = [];
-        var myTrackingStatus = '';
-        var isproximity = 1;
-        var eta = '';
-        var b2bflag = 1;
-        var url = [];
-        var fromloc;
-        var toloc = '';
-        var OTP;
-        var gender;
-        var tripType;
-        var employeeid;
-        var poly = [];
-        var decorator;
-        var line;
-        var interval = 0;
-        var first = true;
-        var first1 = true;
-        var driverlat; 
-        var driverlng;
-        var position = [];
-        var marker;
-        var marker3;
-        var heading = [];
-        var driverMarker;
-        var driverMarkerMmi;
-        let path = [];
-        var newPosition;
-        var mNewPosition = [];
-        var routeDetFrequency = 90000;
-        var myUrl = window.location.href;
-        var exoPhone;
-        var isShuttle = false;
-        let employeeData = []; // define globally
-
-        // Map service instance
-        let mapService;
-
-        const monthAbbr = [
-            "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
-        ];
-
-        // DOM elements
-        const firstModal = document.getElementById('firstModal');
-        const secondModal = document.getElementById('secondModal');
-        const cabNoShowButton = document.getElementById('cabNoShowButton');
-        const aTag = document.getElementById('aTag');
-        const chatButton = document.getElementById('chatButton');
-        const shareButton = document.getElementById('shareButton');
-        const callButton = document.getElementById('callButton');
-        const helpButton = document.getElementById('helpButton');
-        const selfNoShowButton = document.getElementById('selfNoShowButton');
-        const qrCodeButton = document.getElementById('qrCodeButton');
-        const selfNoShow = document.getElementById('selfNoShow');
-        const carouselIndicators = document.getElementById('carousel-indicators');
-        const carouselItem1 = document.getElementById('carousel-item1');
-        const escortId = document.getElementById('escortId');
-        const guardName = document.getElementById('guardName');
-        const tdName = document.getElementById('tdName');
-        const tdName1 = document.getElementById('tdName1');
-        const tdRegistrationNo = document.getElementById('tdRegistrationNo');
-        const tdRegistrationNo1 = document.getElementById('tdRegistrationNo1');
-        const tdVehicleType = document.getElementById('tdVehicleType');
-        const tdVehicleType1 = document.getElementById('tdVehicleType1');
-        const imageDriver = document.getElementById('imageDriver');
-        const imageDriver1 = document.getElementById('imageDriver1');
-        const imageGuard = document.getElementById('imageGuard');
-        const boardingStatus = document.getElementById('boardingStatus');
-        const Otp = document.getElementById('Otp');
-        const etaDiv = document.getElementById('etaDiv');
-        const offCanvasBottom = document.getElementById('offCanvasBottom1');
-        const chatBox = document.getElementById('chatBox');
-        const callAction = document.getElementById('callAction');
-        const callDriverConfirmationButton = document.getElementById('callDriverConfirmationButton');
-        const popupLocationNotAccessible = document.getElementById('popupLocationNotAccessible');
-        const popupNetworkConnection = document.getElementById('popupNetworkConnection');          
-        const qrCodeModal = document.getElementById('qrCodeModal');
-
-        // Initialize on DOM content loaded
-        document.addEventListener('DOMContentLoaded', function(){
-            getRouteDetailsFromQueryString();
-            startRouteDetUpdates();
-            loadMap(facility);
-        });
-
-        // Helper functions
-        function ajaxRequest(url, data, callback, method, username, password) {
-            const ajaxOptions = {
-                type: method,
-                url: url,
-                cache: false,
-                crossDomain: true,
-                data: method === "GET" ? data : JSON.stringify(data),
-                contentType: method === "GET" ? undefined : "application/json; charset=utf-8",
-                dataType: "json",
-                success: callback,
-                failure: function (response) {
-                    console.error("Failure:", response.d);
-                },
-                error: function (response) {
-                    console.error("Error:", response.d);
-                }
-            };
-
-            if (username && password) {
-                ajaxOptions.username = username;
-                ajaxOptions.password = password;
-            }
-
-            $.ajax(ajaxOptions);
-        }
-
-        function ajaxRequestPromise(url, data, method, username, password) {
-            return new Promise((resolve, reject) => {
-                ajaxRequest(url, data, resolve, method, username, password);
-            });
-        }
-
-        function checkForAccenture(clientid, appwimc){
-            if ((clientid == '4' || clientid == '14' || clientid == '13' || clientid == '15' || clientid == '10' || clientid == '25' || clientid == '26' || clientid == '22') && (appwimc == 0)) {
-                $('#firstModal').modal('show');
-                cabNoShowButton.style.display = 'block';
-                chatButton.style.display = 'block';
-                return;
-            }
-            
-            firstModal.style.display = 'none';
-            cabNoShowButton.style.display = 'block';
-            chatButton.style.display = 'block';
-            selfNoShowButton.style.display = 'block';
-            return;
-        }
-
-        function getQueryStringValue(key) {
-            return unescape(
-                window.location.search.replace(
-                    new RegExp(
-                        "^(?:.*[&\\?]" +
-                        escape(key).replace(/[\.\+\*]/g, "\\$&") +
-                        "(?:\\=([^&]*))?)?.*$",
-                        "i"
-                    ),
-                    "$1"
-                )
-            );
-        }
-
-        function getRouteDetailsFromQueryString(){
-            value = getQueryStringValue("v");
-            // console.log(console.log("value: ", value););
-            value1 = getQueryStringValue("s");
-            // console.log(console.log("value1: ", value1););
-            vs = value.substring(4, value.length);
-            
-            clientid = parseInt(value.substring(0, 4));
-            // console.log(console.log("clientid: ", clientid););
-
-            const shuttleRoute = monthAbbr.find(month => vs.includes(month));
-            if(shuttleRoute){
-                // console.log(console.log(`Found month: ${shuttleRoute}`););
-                routeid = vs.substring(0, vs.indexOf(shuttleRoute) + 5);
-                empid = vs.substring(vs.indexOf(shuttleRoute) + 5, vs.length);    
-                // console.log(console.log("routeid: ", routeid););
-                // console.log(console.log("empid: ", empid););
-            }
-            else{
-                if (value.length == 25) {
-                    empid = (value.slice(value.length - 8, value.length));
-                    routeid = vs.substring(0, vs.length - 8);
-                    // console.log(console.log("empid: ", empid););
-                    // console.log(console.log("routeid: ", routeid););
-                }
-                else if (value.length == 24) {
-                    empid = (value.slice(value.length - 7, value.length));
-                    routeid = vs.substring(0, vs.length - 7);
-                    // console.log(console.log(empid););
-                    // console.log(console.log(routeid););
-                }
-                else if (value.length == 23 || value.length == 21) {
-                    empid = (value.slice(value.length - 6, value.length));
-                    routeid = vs.substring(0, vs.length - 6);
-                    // console.log(console.log(empid););
-                    // console.log(console.log(routeid););
-                }
-                else if (value.length == 22 || value.length == 20) {
-                    empid = (value.slice(value.length - 5, value.length));
-                    routeid = vs.substring(0, vs.length - 5);
-                    // console.log(console.log(empid););
-                    // console.log(console.log(routeid););
-                }
-                else if (value.length == 19) {
-                    empid = (value.slice(value.length - 4, value.length));
-                    routeid = vs.substring(0, vs.length - 4);
-                    // console.log(console.log(empid););
-                    // console.log(console.log(routeid););
-                }
-            }
-
-            var murl = myUrl.split("&");
-            var appwimc = 0;
-            var surl;
-            if (murl[1] == 'app=1') {
-                appwimc = 1;
-                surl = murl[2];
-            }
-            else if (murl[2] == 'app=1') {
-                appwimc = 1;
-                surl = murl[1];
-            }
-            else {
-                surl = murl[1];
-                appwimc = 0;
-            }
-
-            // console.log(console.log("empid: ", empid););
-
-            checkForAccenture(clientid, appwimc);
-            fetchGetClientDetailsById(value, value1, clientid);
-        }
-
-        function arePointsNear(checkPoint, centerPoint, km) {
-            var ky = 40000 / 360;
-            var kx = Math.cos((Math.PI * centerPoint.lat) / 180.0) * ky;
-            var dx = Math.abs(centerPoint.lng - checkPoint.lng) * kx;
-            var dy = Math.abs(centerPoint.lat - checkPoint.lat) * ky;
-            return Math.sqrt(dx * dx + dy * dy) <= km;
-        }
-
-        function getLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(showPosition, showError);
-            } else {
-                alert("Geolocation is not supported by this browser.");
-            }
-        }
-
-        function showError(error) {
-            switch (error.code) {
-                case error.PERMISSION_DENIED:
-                    alert("User denied the request for Geolocation.");
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    alert("Location information is unavailable.");
-                    break;
-                case error.TIMEOUT:
-                    alert("The request to get user location timed out.");
-                    break;
-                case error.UNKNOWN_ERROR:
-                    alert("An unknown error occurred.");
-                    break;
-            }
-        }
-
-        async function showPosition(position) {
-            var homelatlng = { lat: position.coords.latitude, lng: position.coords.longitude };
-            var n = arePointsNear(homelatlng, emplatlng1, cabnoshowradius);
-            if (n == true) {
-                var confirmArrived = confirm('Do you want to mark the cab as no-show?');
-                if (confirmArrived == true) {
-                    const response = await ajaxRequestPromise(URL_UpdateCabNoShow, {"routeid": routeid, "empid": empid, "trackingaction": employeeid, "lat": '0', "lng": '0'}, "POST", null, null);
-                    const details  = JSON.parse(response.d);
-                    if(details != null){
-                        // console.log(console.log("cabNoShowData: ", details););
-                        alert('Thank you for the NO Show alert, we will notify the driver immediately.');
-                        cabNoShowButton.style.display = 'none';
-                    }  
-                }
-                else {
-                    // console.log(console.log('cab no show cancelled'));
-                }
-            }
-            else {
-                alert('Current location does not match pick-up location. Reach pick-up point to confirm Cab as No show. ');
-            }
-        }
-
-        cabNoShowButton.addEventListener("click", function(event){
-            event.preventDefault();
-            getLocation();
-        });
-
-        // QR Code functionality
-        document.getElementById("qrCodeButton").addEventListener("click", function () {
-            var qrModal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
-            qrModal.show();
-            startQRScanner();
-        });
-
-        function startQRScanner() {
-            const qrCodeScanner = new Html5Qrcode("qr-reader");
-
-            qrCodeScanner.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 }
-                },
-                (decodedText, decodedResult) => {
-                    // console.log(console.log("Scanned Code:", decodedText););
-                    alert("QR Code Scanned: " + decodedText);
-                    // Close modal after successful scan
-                    var modal = bootstrap.Modal.getInstance(document.getElementById("qrCodeModal"));
-                    modal.hide();
-                },
-                (errorMessage) => {
-                    console.warn("QR Code scan error:", errorMessage);
-                }
-            ).catch((err) => {
-                console.error("Failed to start QR scanner:", err);
-            });
-
-            // Stop scanner when modal is closed
-            document.getElementById("qrCodeModal").addEventListener("hidden.bs.modal", function () {
-                qrCodeScanner.stop().catch((err) => console.error("Error stopping scanner:", err));
-            });
-        }
-        function share() {
-            var isMobile = {
-                Android: function () {
-                    return navigator.userAgent.match(/Android/i);
-                },
-                BlackBerry: function () {
-                    return navigator.userAgent.match(/BlackBerry/i);
-                },
-                iOS: function () {
-                    return navigator.userAgent.match(/iPhone|iPad|iPod/i);
-                },
-                Opera: function () {
-                    return navigator.userAgent.match(/Opera Mini/i);
-                },
-                Windows: function () {
-                    return navigator.userAgent.match(/IEMobile/i);
-                },
-                any: function () {
-                    return (
-                        isMobile.Android() ||
-                        isMobile.BlackBerry() ||
-                        isMobile.iOS() ||
-                        isMobile.Opera() ||
-                        isMobile.Windows()
-                    );
-                }
-            };
-
-            if (isMobile.any()) {
-                var url;
-                if (gender == 'M') {
-                    url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view his trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
-                }
-                else if (gender == 'F') {
-                    url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view her trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
-                }
-                else {
-                    url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view their trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
-                }
-                var message = encodeURIComponent(url);
-                var whatsapp_url = "whatsapp://send?text=" + message;
-                window.location.href = whatsapp_url;
-            } else {
-                alert("Please share this article in mobile device");
-            }
-        }
-
-        function share1() {
-            var getOS = function () {
-                var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-                if (
-                    userAgent.match(/iPad/i) ||
-                    userAgent.match(/iPhone/i) ||
-                    userAgent.match(/iPod/i)
-                ) {
-                    return "iOS";
-                } else if (userAgent.match(/Android/i)) {
-                    return "Android";
-                } else {
-                    return "unknown";
-                }
-            }
-
-            var device = getOS();
-            var url;
-
-            if (gender == 'M') {
-                url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view his trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
-            }
-            else if (gender == 'F') {
-                url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view her trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
-            }
-            else {
-                url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view their trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
-            }
-
-            var message = encodeURIComponent(url);
-            // console.log(console.log("message ", message););
-            
-            if (device == "iOS") {
-                window.location.href = "sms: &body=" + message;
-            }
-            if (device == "Android") {
-                window.location.href = "sms:?body=" + message;
-            }
-        }
-
-        function secondsToHms(d) {
-            d = Number(d);
-            var h = Math.floor(d / 3600);
-            var m = Math.floor(d % 3600 / 60);
-            var s = Math.floor(d % 3600 % 60);
-
-            var hDisplay = "", mDisplay = "", sDisplay = "";
-            if (h > 0) {
-                if (h == 1) {
-                    hDisplay = h + " hr ";
-                }
-                else {
-                    hDisplay = h + " hrs ";
-                }
-            }
-            if (m > 0) {
-                if (m == 1) {
-                    mDisplay = m + " min ";
-                } else {
-                    mDisplay = m + " mins ";
-                }
-            }
-            if (s > 0) {
-                sDisplay = s + "s";
-            }
-            if (!(h > 0) && !(m > 0) && s > 0) {
-                return "Soon";
-            }
-
-            return hDisplay + mDisplay;
-        }
         
-        async function fetchGetClientDetailsById(value, value1, clientid){
-            if(value || value1){
-                const response = await ajaxRequestPromise("https://www.etmsdrive.in/appControlRest/api/v1/getClientDetailById", {CID: clientid}, "GET", "user1", "Acc@bang10");
-                const details = JSON.parse(response);
-                // console.log(console.log("GetClientDetailByIdData: ", details););
-                createUrlFromClientDetails(details[0]);
-            }
-        }
-
-        function createUrlFromClientDetails(data){
-            BASE_URL = data.trackurl;
-            URL_CabValidation = BASE_URL + "MyCabValidation";
-            URL_ProfilePicture = data.photourl;
-            URL_CallingApi = BASE_URL + "CallingAPI";
-            URL_RouteInfo = BASE_URL + "GetRouteInfoMyCab";
-            // console.log(console.log("URL_RouteInfo: ", URL_RouteInfo););
-            URL_RouteDetail = BASE_URL + "GetRouteDetail";
-            URL_RouteDetailShuttle = BASE_URL + "GetRouteDetailShuttle";
-            URL_GetGpsLogger = BASE_URL + "GetGPSLogger";
-            URL_UpdateCabNoShow = BASE_URL + 'UpdateCabNoShow';
-            URL_UpdateTrackingSelf = BASE_URL + 'UpdateTrackingSelf';
-
-            fetchRouteInfoData();
-        }
-
-        async function fetchRouteInfoData(){
-            const response = await ajaxRequestPromise(URL_RouteInfo, {RouteId: routeid}, "POST", "user1", "Acc@bang10");
-            const details = JSON.parse(response);
-            // console.log(console.log("fetchRouteInfoData: ", details););
-            displayDetails(details[0]);
-        }
-
-        async function displayDetails(data){
-            if(data.routeID != 'NA'){
-                facility = data.facility;
-                // console.log(console.log("facility: " + facility););
-
-                if(data.chatonlyforpwd == '0'){
-                    chatButton.style.display = 'block';
-                }
-                else if(data.chatonlyforpwd == '1'){
-                    if(data.is_pwd == '1'){
-                        chatButton.style.display = 'block';
-                    }
-                    else{
-                        chatButton.style.display = 'none';
-                    }
-                }
-                else{
-                    chatButton.style.display = 'none';
-                }
-
-                if(data.isshuttle == 1){
-                    isShuttle = true;
-                    selfNoShowButton.style.display = 'none';
-                    cabNoShowButton.style.display = 'none';
-                    callButton.style.display = 'none';
-                    etaDiv.style.display = 'none';
-                    qrCodeButton.style.display = 'none';
-                }
-            }
-
-            cabnoshowradius = data.cabnoshowradius / 1000;
-            driver_contact.push(data.driverContact);
-            driver_contact1 = data.driverContact;
-            var profileUrl = URL_ProfilePicture + data.driverContact + ".jpeg";
-            var guardImage = data.guardphotourl;
-
-            var p = data.vehicleRegNo;
-            if (data.isb2b == "1") {
-                b2bFlag = "3";
-            } else {
-                b2bFlag = "1";
-            }
-            
-            if (data.guardid == '' || data.guardid == null) {
-                // console.log(console.log('no guard'););
-                carouselIndicators.style.display = 'none';
-                carouselItem1.style.display = 'none';
-                const carouselExampleIndicators = document.getElementById('carouselExampleIndicators');
-                carouselExampleIndicators.setAttribute('data-bs-touch', "false");
-            }
-            else {
-                // console.log(console.log('guard'););
-            }
-
-            driverName = data.driverName;
-            vehicleRegNo.push(p);
-            vehicleType = data.vehicleType;
-            tptContactNo = data.tptContactNo;
-            // console.log(console.log("tptContactNo: ", tptContactNo););
-            aTag.setAttribute('data-rel', 'external');
-            aTag.setAttribute('href', 'tel:' + tptContactNo);
-
-            guardName.innerText = data.guardname;
-            escortId.innerText = data.guardid;
-
-            tdName.innerText = driverName;
-            tdName1.innerText = driverName;
-            tdRegistrationNo.innerText = vehicleRegNo;
-            tdRegistrationNo1.innerText = vehicleRegNo;
-            tdVehicleType.innerText = vehicleType;
-            tdVehicleType1.innerText = vehicleType;
-
-            document.getElementById("imageDriver").src = profileUrl;
-            document.getElementById("imageDriver1").src = profileUrl;
-            document.getElementById('imageGuard').src = guardImage;
-            
-            fetchRouteDetailData();
-        }
-
-        async function fetchRouteDetailData(){
-            var response;
-            // console.log(console.log("isShuttle: ", isShuttle););
-            if(isShuttle){
-               response = await ajaxRequestPromise(URL_RouteDetailShuttle, {RouteId: routeid, flag: b2bFlag}, "POST", "user1", "Acc@bang10");     
-            }
-            else{
-                response = await ajaxRequestPromise(URL_RouteDetail, {RouteId: routeid, flag: b2bFlag}, "POST", "user1", "Acc@bang10");
-            }
-            
-            const details = JSON.parse(response);
-            const details1 = details;
-            // console.log(console.log("fetchRouteDetailData: ", details););
-                                
-            const filteredData = details.filter(item => (item.id == empid));
-            // console.log(console.log("filteredData: ", filteredData););
-                                
-            displayDetails1(filteredData[0], details1);
-        }
-
-        function displayDetails1(data, details){
-            // --- SHUTTLE ROUTE HANDLING ---
-            if (isShuttle && Array.isArray(details)) {
-                cabNoShowButton.style.display = 'none';
-                chatButton.style.display = 'none';
-                selfNoShowButton.style.display = 'none';
-                etaDiv.style.display = 'none';
-                Otp.style.display = 'none';
-                if (value1 == 's') {
-                    callButton.style.display = 'none';
-                    callAction.style.display = 'none';
-                } else {
-                    callButton.style.display = 'block';
-                    callAction.style.display = 'block';
-                }
-                // Plot the shuttle route
-                if (mapService) {
-                    const waypoints = details
-                        .filter(item => item.lat && item.lng)
-                        .map(item => [parseFloat(item.lat), parseFloat(item.lng)]);
-                    if (waypoints.length > 1) {
-                        if (mapService.routePolyline) {
-                            mapService.map.removeLayer(mapService.routePolyline);
-                        }
-                        mapService.routePolyline = L.polyline(waypoints, {
-                            color: '#4285F4',
-                            weight: 4,
-                            opacity: 0.8,
-                        }).addTo(mapService.map);
-                        mapService.map.fitBounds(mapService.routePolyline.getBounds(), { padding: [20, 20] });
-                        mapService.addCarMarker(waypoints[0][0], waypoints[0][1], true);
-                    }
-                }
-                fetchGpsLoggerData(details);
-                return; // Do not process further for shuttle
-            }
-            // --- TRIP ENDED CHECK ---
-            if (data.actVehicleEndTime && data.actVehicleEndTime !== "Date(0)" && data.actVehicleEndTime !== null) {
-                tripEnded = true;
-                // Show "Trip Ended" in the UI
-                boardingStatus.innerHTML = `<h3><strong>TRIP ENDED</strong></h3>`;
-                boardingStatus.style.display = 'inline-block';
-                Otp.style.display = 'none';
-                // Hide/disable other UI elements as needed
-                callButton.style.display = 'none';
-                helpButton.style.display = 'none';
-                selfNoShowButton.style.display = 'none';
-                chatButton.style.display = 'none';
-                etaDiv.style.display = 'none';
-                chatBox.style.display = 'none';
-                cabNoShowButton.style.display = 'none';
-                callAction.style.display = 'none';
-                // Stop all intervals
-                if (typeof locupdate !== 'undefined') clearInterval(locupdate);
-                if (typeof showMapUpdate !== 'undefined') clearInterval(showMapUpdate);
-                // Optionally, clear map markers
-                if (mapService) {
-                    mapService.clearRoute();
-                    if (typeof currentEmployeeHomeMarker !== 'undefined' && currentEmployeeHomeMarker) {
-                        mapService.map.removeLayer(currentEmployeeHomeMarker);
-                        currentEmployeeHomeMarker = null;
-                    }
-                    if (mapService.carMarker) {
-                        mapService.map.removeLayer(mapService.carMarker);
-                        mapService.carMarker = null;
-                    }
-                }
-                if (typeof employeeEtaInterval !== 'undefined') clearInterval(employeeEtaInterval);
-                return; // Exit early, don't process further
-            }
-            else{
-                // console.log(console.log('::::::::::>' + data.trackingStatus););
-                // console.log(console.log(data.id););
-                // console.log(console.log(data.tripType););
-                // console.log(console.log(data.empName););
-                // console.log(console.log(data.lat););
-                // console.log(console.log(data.lng););
-            }
-
-            if(data.id == empid){
-                gender = data.Gender;
-                exoPhone = data.exophone;
-                // console.log(console.log(gender););
-                employeeid = data.employeeID;
-                tripType = data.tripType;
-
-                if ((data.CabNoShow == 0) && (clientid == '10' || clientid == '14' || clientid == '15' || clientid == '22')) {
-                    cabNoShowButton.style.display = 'block';
-                }
-                else {
-                    cabNoShowButton.style.display = 'none';
-                }
-
-                if (data.tripType == 'D') {
-                    cabNoShowButton.style.display = 'none';
-                    chatButton.style.display = 'none';
-                }
-
-                if (clientid == '10' || clientid == '14' || clientid == '15' || clientid == '22' || clientid == '25') {
-                    shareButton.style.display = 'block';
-                }
-                else {
-                    shareButton.style.display = 'none';
-                }
-
-                empname = data.empName;
-                emp_contact = data.EmpMobile;
-                // console.log(console.log(emp_contact););
-
-                emplatlng1 = { lat: data.lat, lng: data.lng };
-                // console.log(console.log(emplatlng1););
-
-                myTrackingStatus = data.trackingStatus;
-                if ((myTrackingStatus == "Boarded" || tripType == 'D') || (myTrackingStatus == "No-Show" || tripType == 'D')) {
-                    routeDetFrequency = 10000000;
-                }
-                
-                if (myTrackingStatus != '----') {
-                    boardingStatus.innerHTML = `<h3><strong>${myTrackingStatus.toUpperCase()}</strong></h3>`;
-                    boardingStatus.style.display = 'inline-block';
-                }
-                else {
-                    boardingStatus.style.display = 'none';
-                    OTP = data.boardingOTP;
-                    // console.log(console.log(OTP););
-                    if (OTP != null) {
-                        Otp.innerHTML = `<h3><strong>OTP: ${OTP} </strong></h3>`;
-                        Otp.style.display = 'inline-block';
-                    }
-                }
-
-                if (myTrackingStatus == "No-Show" || data.tripType == 'D') {
-                    callButton.style.display = 'none';
-                    helpButton.style.display = 'block';
-                    selfNoShowButton.style.display = 'none';
-                    chatButton.style.display = 'none';
-                    etaDiv.style.display = 'none';
-                    Otp.style.display = 'none';
-                    chatBox.style.display = 'none';
-                    cabNoShowButton.style.display = 'none';
-                } 
-                else if (myTrackingStatus == "Boarded" || data.tripType == 'D') {
-                    callButton.style.display = 'none';
-                    helpButton.style.display = 'block';
-                    selfNoShowButton.style.display = 'none';
-                    chatButton.style.display = 'none';
-                    etaDiv.style.display = 'none';
-                    Otp.style.display = 'none';
-                    chatBox.style.display = 'none';
-                    cabNoShowButton.style.display = 'none';
-                }
-                else if (myTrackingStatus == "De-Boarded" || data.tripType == 'D') {
-                    callButton.style.display = 'none';
-                    helpButton.style.display = 'block';
-                    selfNoShowButton.style.display = 'none';
-                    chatButton.style.display = 'none';
-                    etaDiv.style.display = 'none';
-                    Otp.style.display = 'none';
-                    offCanvasBottom.style.display = 'none';
-                    chatBox.style.display = 'none';
-                    cabNoShowButton.style.display = 'none';
-                }
-                else if(clientid =='28' || clientid == '60'){
-                    selfNoShowButton.style.display = 'none';
-                    callButton.style.display = 'block';
-                    helpButton.style.display = 'block';
-                    etaDiv.style.display = 'none';
-                    Otp.style.display = 'block';
-                }
-                else {
-                    callButton.style.display = 'block';
-                    helpButton.style.display = 'block';
-                    etaDiv.style.display = 'none';
-                    Otp.style.display = 'block';
-                }
-
-                callAction.style.display = 'block';
-
-                if (value1 == 's') {
-                    callButton.style.display = 'none';
-                    helpButton.style.display = 'block';
-                    selfNoShowButton.style.display = 'none';
-                    chatButton.style.display = 'none';
-                    etaDiv.style.display = 'none';
-                    Otp.style.display = 'none';
-                    chatBox.style.display = 'none';
-                    cabNoShowButton.style.display = 'none';
-                    callAction.style.display = 'none';
-                }
-                
-                callDriverConfirmationButton.addEventListener('click', function(event){
-                    event.preventDefault();
-                    callLatch();
-                });
-
-                function callLatch() {
-                    callApi();
-                }
-
-                var lathome = data.lat;
-                var lnghome = data.lng;
-                
-                toloc = data.lat + ',' + data.lng;
-                // console.log(console.log("toloc: ", toloc););
-
-                // Add employee marker to map
-                if(toloc != null && mapService){
-                    mapService.addEmployeeMarker(data.lat, data.lng);
-                }
-                        
-                fetchGpsLoggerData(details);
-            }
-        }
-
-        async function callApi(){
-            try {
-                const response = await ajaxRequestPromise(URL_CallingApi, {empid: empid, drivermobile: driver_contact[0], type: "sun"}, "POST", null, null);
-                // console.log(console.log("API call successful: ", response););
-                updateModal("Please wait while your call is being connected", 'success');
-            } catch(error) {
-                // console.log(console.log("API call failed: ", error););
-                updateModal("The call cannot be connected as an error was encountered", 'danger');
-            }
-        }
-
-        // 🔧 CORRECTED Data Handling
-        // 🔧 FINAL CORRECTED Data Handling (Direct JSON String)
-        // 🔧 REVISED fetchGpsLoggerData: Corrected variable name in catch block
-async function fetchGpsLoggerData(data){
-    try {
-        const rawResponse = await ajaxRequestPromise(URL_GetGpsLogger, {deviceId: routeid, vendorid: 0}, "POST", "user1", "Acc@bang10");
+            // Add car marker using L.divIcon with a rotatable inner image
+            addCarMarker(lat, lng, isShuttle = false) {
+                const iconUrl = isShuttle ? 'images/shuttle.png' : 'images/car.svg';
+                const iconSize = isShuttle ? [48, 48] : [38, 38];
+                const halfWidth = iconSize[0] / 2;
+                const halfHeight = iconSize[1] / 2;
         
-        const details = JSON.parse(rawResponse); 
-
-        if (details && details.length > 0 && details[0].lat && details[0].lng) {
-            // console.log(console.log("Successfully parsed GPS data:", details););
-            displayDetails2(details[0], data);
-        } else {
-            console.warn("GPS data received, but it's empty or invalid after parsing.", details);
-            popupLocationNotAccessible.style.display = 'block';
-        }
-
-    } catch(error) {
-        console.error("Error fetching or parsing GPS data:", error);
-        // 🔧 FIX: Use the correct variable name defined in your HTML
-        if (popupNetworkConnection) { // Check if the element exists before trying to access its style
-            popupNetworkConnection.style.display = 'block'; 
-        } else {
-            console.error("Error: popupNetworkConnection element not found in DOM.");
-        }
-    }
-}
-
-function displayDetails2(data, details){
-            // console.log(console.log("lat: ", data.lat););
-            // console.log(console.log("lng: ", data.lng););
-            
-            var lat = data.lat;
-            var lng = data.lng;
-            
-            if (lat == null || lat == undefined || lat === 0 || lng == null || lng == undefined || lng === 0) {
-                popupLocationNotAccessible.style.display = 'block';
-                return;
-            } else {
-                popupLocationNotAccessible.style.display = 'none';
-            }
-
-            driverlat = data.lat;
-            driverlng = data.lng;
-            position = [driverlat, driverlng];
-            fromloc = [lat, lng];
-            
-            // console.log(console.log("fromloc: ", fromloc););
-
-            // Initialize map service and add car marker
-            if (mapService) {
-                mapService.addCarMarker(lat, lng, isShuttle);
-                mapService.centerMap(lat, lng);
-            }
-        }
-
-        // 🔧 Updated map loading functions
-        async function loadMap(facility) {
-            return await loadOpenSourceMap();
-        }
-
-        async function loadOpenSourceMap() {
-            try {
-                mapService = new OpenSourceMapService();
-                mapService.initializeMap('map');
-                // console.log(console.log('Open source map loaded successfully'););
-                return mapService;
-            } catch (error) {
-                console.error('Failed to load map:', error);
-                throw error;
-            }
-        }
-
-        // 🔧 Updated marker movement function
-        async function moveMarker1() {
-            if (tripEnded) return; // Prevent further execution if trip is ended
-            try {
-                const response = await ajaxRequestPromise(URL_GetGpsLogger, {deviceId: routeid, vendorid: 0}, "POST", "user1", "Acc@bang10");
-                const details = JSON.parse(response);
-                // console.log(console.log("moveMarkerData: ", details););
-                
-                if (details[0] && details[0].lat && details[0].lng) {
-                    const newLat = details[0].lat;
-                    const newLng = details[0].lng;
-                    
-                    // Update car position with smooth animation
-                    if (mapService && mapService.carMarker) {
-                        mapService.updateCarPosition(newLat, newLng, true);
-                    }
-                    
-                    // Update stored position
-                    position = [newLat, newLng];
-                    newPosition = [newLat, newLng];
-                }
-            } catch (error) {
-                console.error('Error updating marker position:', error);
-            }
-        }
-
-// Global variable to hold the employee's specific marker, if needed
-// This might be redundant if addRouteMarkers handles it cleanly
-let currentEmployeeHomeMarker = null;
-
-// Ensure `routeDetFrequency` is set to a constant, regular interval globally
-// e.g., var routeDetFrequency = 60000; // 1 minute, or 30000 for 30 seconds
-
-async function calculateEtaAndPlotPath() {
-    // console.log(console.log("Fetching route details for status update and map plotting..."););
-
-    try {
-        const response = await ajaxRequestPromise(URL_RouteDetail, { RouteId: routeid, flag: b2bFlag }, "POST", "user1", "Acc@bang10");
-        const parsedData = JSON.parse(response);
-        // console.log(console.log("calculateEtaAndPlotPathData: ", parsedData););
-        employeeData = parsedData; // Store the employee data globally
-
-        // Find the current employee's details
-        const currentEmployee = parsedData.find(item => item.id == empid);
-
-        if (!currentEmployee || !currentEmployee.lat || !currentEmployee.lng) {
-            console.warn("Current employee details not found or invalid coordinates.");
-            // Even if details are missing, call displayDetails1 with a default or last known state
-            // to ensure UI cleanup if needed. For now, we'll just return.
-            return;
-        }
-
-        // --- THE CRITICAL CHANGE: ALWAYS CALL displayDetails1 HERE ---
-        // This ensures that the UI (OTP, Boarded status, and all buttons)
-        // is updated with the latest `trackingStatus` from the server.
-        displayDetails1(currentEmployee, parsedData);
-
-        // --- Now, apply the conditions for stopping map/ETA updates ---
-        // If the current user's trip segment is "Boarded", "No-Show", "De-Boarded", or a "Drop" trip,
-        // then we don't need to show map tracking or ETA for them anymore.
-        if (currentEmployee.trackingStatus === 'Boarded' ||
-            currentEmployee.trackingStatus === 'No-Show' ||
-            currentEmployee.trackingStatus === 'De-Boarded' || // Added De-Boarded for completeness
-            currentEmployee.tripType === 'D') {
-            
-            // console.log(console.log(`Trip for employee ${empid} is completed (${currentEmployee.trackingStatus}));. Hiding ETA and clearing map.`);
-            document.getElementById('etaDiv').style.display = 'none'; // Hide ETA
-            
-            // Clear map elements if the trip is complete for this user
-            if (mapService) {
-                // mapService.clearRoute(); // Clears polylines and general employee markers
-                if (currentEmployeeHomeMarker) { // Explicitly remove the home marker too if it's there
-                    mapService.map.removeLayer(currentEmployeeHomeMarker);
-                    currentEmployeeHomeMarker = null;
-                }
-                if (mapService.carMarker) { // Remove the car marker itself
-                    mapService.map.removeLayer(mapService.carMarker);
-                    mapService.carMarker = null; // Clear reference
-                }
-            }
-            return; // Exit here if no further map/ETA updates are needed
-        }
-
-        // --- Continue with Map Plotting and ETA Calculation (ONLY if trip is active) ---
-        // console.log(console.log("Proceeding with map plotting and ETA calculation..."););
-
-        // Clear existing route and employee markers from the map before plotting new ones
-        if (mapService) {
-            mapService.clearRoute(); // This will clear previous route and employee markers
-        }
-
-        // --- Plot the Current Employee's Home Icon ---
-        // We will add it directly here, not relying on mapService.addRouteMarkers
-        // to avoid other numbered markers appearing.
-        // console.log(console.log("Current Employee's Home Location:", currentEmployee.lat, currentEmployee.lng););
-        if (mapService && currentEmployee.lat && currentEmployee.lng) {
-            const homeIcon = L.icon({
-                iconUrl: 'images/home.png', // Always use the home icon for the current user
-                iconSize: [25, 25],
-                iconAnchor: [12, 12],
-            });
-            // Ensure you remove the old one if it exists to prevent duplicates on redraw
-            if (currentEmployeeHomeMarker) {
-                mapService.map.removeLayer(currentEmployeeHomeMarker);
-            }
-            currentEmployeeHomeMarker = L.marker([currentEmployee.lat, currentEmployee.lng], { icon: homeIcon }).addTo(mapService.map);
-        }
-
-        // --- Determine the route waypoints from cab to current employee's stop ---
-        let routeWaypoints = [];
-        let destinationLatLng = [currentEmployee.lat, currentEmployee.lng];
-
-        // Filter for stops *before or at* the current employee's stop, including only unboarded ones
-        // This ensures the route only shows progression towards *this* employee
-        const relevantStops = parsedData
-            .filter(item =>
-                item.trackingStatus === "----" && // Only unboarded stops
-                item.stopNo <= currentEmployee.stopNo // Stops on or before current employee's stop number
-            )
-            .sort((a, b) => a.stopNo - b.stopNo); // Ensure stops are in correct sequence
-
-        // Construct the waypoints for the polyline.
-        // The first point will be the cab's current position (newPosition).
-        // Then, intermediate points will be all relevant stops *before* the current employee's stop.
-        // The final point will be the current employee's stop.
-        if (newPosition) { // `newPosition` comes from `moveMarker1` (GPSLogger)
-            // Add intermediate stops between cab and current employee (if any)
-            // Filter out the current employee's own stop from intermediate waypoints
-            // as it will be the 'end' point.
-            const intermediatePoints = relevantStops
-                .filter(item => item.id !== empid)
-                .map(item => [item.lat, item.lng]);
-
-            // Create the route on the map
-            // Note: The createSimpleRoute will handle adding the car marker
-            // and connecting the points for the polyline.
-            mapService.createSimpleRoute(
-                newPosition,          // Start point: Cab's current location
-                intermediatePoints,   // Intermediate points: Other unboarded stops on the way
-                destinationLatLng     // End point: Current employee's home location
-            );
-
-            // console.log(console.log('Route created from cab to employee:', newPosition, intermediatePoints, destinationLatLng););
-
-            // --- Calculate and display ETA ---
-            // Recalculate ETA only considering the path from cab to current employee
-            await calculateEtaOpenSource(relevantStops, currentEmployee);
-
-        } else {
-            console.warn("Cab's current position (newPosition) not available.");
-            // Optionally hide ETA if cab position isn't known
-            document.getElementById('etaDiv').style.display = 'none';
-        }
-
-    } catch (error) {
-        console.error('Error calculating ETA and plotting path:', error);
-        // Display network connection popup if there's a fetch error
-        if (popupNetworkConnection) {
-            popupNetworkConnection.style.display = 'block';
-        }
-    }
-}
-
-// Add at the top of your global variables
-var tripEnded = false;
-var employeeEtaInterval;
-
-// Replace the setInterval for updateEmployeeETAs with:
-employeeEtaInterval = setInterval(async () => {
-    if (!driverlat || !driverlng || !mapService || tripEnded) return;
-    await mapService.updateEmployeeETAs(driverlat, driverlng, employeeData);
-}, 10000); // every 10 seconds
-
-
-// You will also need to adjust calculateEtaOpenSource slightly
-// to work with the 'relevantStops' parameter you pass it.
-
-async function calculateEtaOpenSource(stopsOnRoute, currentEmployee) {
-    if (!stopsOnRoute.length || !newPosition || !currentEmployee) return;
-
-    try {
-        let totalDistance = 0;
-        let currentPathPoint = newPosition; // Start from cab's current location
-
-        // Calculate distance to each stop in order, until the current employee's stop
-        // 'stopsOnRoute' is already filtered and sorted
-        for (let i = 0; i < stopsOnRoute.length; i++) {
-            const stop = stopsOnRoute[i];
-            const nextPoint = [stop.lat, stop.lng];
-            const distanceSegment = mapService.calculateDistance(currentPathPoint, nextPoint);
-            totalDistance += distanceSegment;
-            currentPathPoint = nextPoint; // Move to the next stop for the next segment calculation
-
-            // If we've reached the current employee's stop, break
-            if (stop.id === currentEmployee.id) {
-                break;
-            }
-        }
-
-        // Assume average speed of 25 km/h in city traffic
-        const etaMinutes = (totalDistance / 25) * 60;
-        const etaText = secondsToHms(etaMinutes * 60);
-
-        if (etaText && etaText !== "Soon") {
-            document.getElementById('eta').innerHTML = '<small>Reaching in<br></small>' + etaText;
-            document.getElementById('etaDiv').style.display = 'block';
-        } else {
-            document.getElementById('eta').innerHTML = '<small>Reaching<br></small>Soon';
-            document.getElementById('etaDiv').style.display = 'block';
-        }
-
-    } catch (error) {
-        console.error('ETA calculation error:', error);
-    }
-}
-
-        // Interval management
-        document.addEventListener("visibilitychange", () => {
-            if(document.hidden){
-                clearInterval(locupdate);
-                clearInterval(showMapUpdate);
-                // console.log(console.log('Intervals stopped'););
-            }
-            else{
-                if (tripEnded) return;
-                startRouteDetUpdates();
-            }
-        });
-
-        function startRouteDetUpdates() {
-            if (tripEnded) return;
-            setTimeout(function() {
-                calculateEtaAndPlotPath();
-                locupdate = setInterval(calculateEtaAndPlotPath, routeDetFrequency);
-                showMapUpdate = setInterval(moveMarker1, 5000);
-            }, 3000);
-        }
-
-        // Self no-show functionality
-        function selfNoShowEvent(){
-            // console.log(console.log("self no show clicked"););
-            if(myTrackingStatus != '----'){
-                updateModal(`You cannot mark yourself as No-Show for this trip as you are already marked as ${myTrackingStatus} for this trip.`, 'danger');
-            }
-            else{
-                if(tripType != 'D'){
-                    $.ajax({
-                        type: 'POST',
-                        cache: false,
-                        url: URL_UpdateTrackingSelf,
-                        data: JSON.stringify({
-                            routeid: routeid,
-                            empid: empid,
-                            trackingaction: 'N',
-                            actionby: '0',
-                            distance: employeeid
-                        }),
-                        crossDomain: true,
-                        contentType: 'application/json; charset=utf-8',
-                        dataType: 'json'
-                    })
-                    .done(function (data) {
-                        updateModal("You have marked yourself as No-Show.", 'success');
-                    })
-                    .fail(function (e) {
-                        updateModal(`Error: ${e.statusText}`, 'danger');
-                    });
-                }
-            }
-        }
-
-        selfNoShow.addEventListener('click', function(event){
-            event.preventDefault();
-            selfNoShowEvent();
-        });
-
-        // Modal functions
-        function updateModal(message, alertType) {
-            const modal = document.getElementById('alertModal');
-            const modalMessage = document.getElementById('modalMessage');
-
-            modal.className = 'modal fade';
-
-            switch (alertType) {
-                case 'success':
-                    modal.classList.add('modal-success');
-                    break;
-                case 'danger':
-                    modal.classList.add('modal-danger');
-                    break;
-                case 'warning':
-                    modal.classList.add('modal-warning');
-                    break;
-                case 'info':
-                    modal.classList.add('modal-info');
-                    break;
-                default:
-                    modal.classList.add('modal-info');
-                    break;
-            }
-
-            modalMessage.textContent = message;
-            const bootstrapModal = new bootstrap.Modal(modal);
-            bootstrapModal.show();
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('alertModal');
-            const bootstrapModal = bootstrap.Modal.getInstance(modal);
-            if (bootstrapModal) {
-                bootstrapModal.hide();
-            }
-        }
-
-        function validateInput(inputElement) {
-            var emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
-
-            if (emojiRegex.test(inputElement.value)) {
-                alert('Emojis are not allowed in the input!');
-                inputElement.value = inputElement.value.replace(emojiRegex, '');
-            }
-        }
-
-        // Chat and Firebase initialization (keeping the original Firebase chat functionality)
-        setTimeout(function () {
-            // Chat scrollable tabs initialization
-            const tabs = document.querySelectorAll(".scrollable-tabs-container a");
-            const rightArrow = document.querySelector(".scrollable-tabs-container .right-arrow svg");
-            const leftArrow = document.querySelector(".scrollable-tabs-container .left-arrow svg");
-            const tabsList = document.querySelector(".scrollable-tabs-container ul");
-            const leftArrowContainer = document.querySelector(".scrollable-tabs-container .left-arrow");
-            const rightArrowContainer = document.querySelector(".scrollable-tabs-container .right-arrow");
-
-            const removeAllActiveClasses = () => {
-                tabs.forEach((tab) => {
-                    tab.classList.remove("active");
+                // Create a custom divIcon
+                const customCarIcon = L.divIcon({
+                    className: 'car-marker-container', // Main container controlled by Leaflet
+                    html: `<img src="${iconUrl}" style="width:100%; height:100%; transform-origin: center; display: block;" class="car-icon-rotatable">`, // Inner image for rotation
+                    iconSize: iconSize,
+                    iconAnchor: [halfWidth, halfHeight], // Anchor in the center
+                    popupAnchor: [0, -halfHeight] // Popup position relative to anchor
                 });
-            };
-
-            tabs.forEach((tab) => {
-                tab.addEventListener("click", () => {
-                    removeAllActiveClasses();
-                    tab.classList.add("active");
-                });
-            });
-
-            const manageIcons = () => {
-                if (tabsList.scrollLeft >= 20) {
-                    leftArrowContainer.classList.add("active");
+        
+                if (this.carMarker) {
+                    this.map.removeLayer(this.carMarker);
+                }
+        
+                if (typeof L.Marker.movingMarker === 'function') {
+                    this.carMarker = L.Marker.movingMarker([[lat, lng]], [], {
+                        icon: customCarIcon,
+                        autostart: false,
+                    }).addTo(this.map);
                 } else {
-                    leftArrowContainer.classList.remove("active");
+                    this.carMarker = L.marker([lat, lng], {
+                        icon: customCarIcon
+                    }).addTo(this.map);
+                    console.warn("L.Marker.movingMarker is not available. Using standard L.marker (no animation).");
                 }
-
-                let maxScrollValue = tabsList.scrollWidth - tabsList.clientWidth - 20;
-
-                if (tabsList.scrollLeft >= maxScrollValue) {
-                    rightArrowContainer.classList.remove("active");
-                } else {
-                    rightArrowContainer.classList.add("active");
-                }
-            };
-
-            rightArrow.addEventListener("click", () => {
-                tabsList.scrollLeft += 200;
-                manageIcons();
-            });
-
-            leftArrow.addEventListener("click", () => {
-                tabsList.scrollLeft -= 200;
-                manageIcons();
-            });
-
-            tabsList.addEventListener("scroll", manageIcons);
-
-            let dragging = false;
-
-            const drag = (e) => {
-                if (!dragging) return;
-                tabsList.classList.add("dragging");
-                tabsList.scrollLeft -= e.movementX;
-            };
-
-            tabsList.addEventListener("mousedown", () => {
-                dragging = true;
-            });
-
-            tabsList.addEventListener("mousemove", drag);
-
-            document.addEventListener("mouseup", () => {
-                dragging = false;
-                tabsList.classList.remove("dragging");
-            });
-
-            // Load chat messages
-            var messageElement1 = document.getElementById('chat-messages1');
-            $.ajax({
-                url: 'https://www.etmsdrive.in/appControlRest/api/v1/application/chat/22/0',
-                method: 'GET',
-                success: OnSuccess,
-                error: onError
-            });
-
-            function OnSuccess(response) {
-                const parsedData = JSON.parse(response);
-                const messageInput = document.getElementById("message-input");
-                const list = document.querySelector('#chat-messages1');
                 
-                for (let i = 0; i < parsedData.length; i++) {
-                    const li = document.createElement('li');
-                    const a = document.createElement('a');
-                    a.href = "#";
-                    a.textContent = parsedData[i].text;
-                    li.addEventListener("click", function () {
-                        const messageText = li.textContent;
-                        if (messageText !== '') {
-                            messageInput.value = messageText;
-                        }
-                    });
-                    li.appendChild(a);
-                    list.appendChild(li);
-                }
+                this.previousLatLng = L.latLng(lat, lng);
+                return this.carMarker;
             }
-
-            function onError(xhr, status, error) {
-                console.error('Error loading chat messages:', error);
+        
+            // Helper to get the inner rotatable image element
+            _getRotatableCarIconElement() {
+                // The movingMarker's _icon is the outer div.
+                // We need to find the img inside it.
+                return this.carMarker && this.carMarker._icon ? 
+                       this.carMarker._icon.querySelector('.car-icon-rotatable') : null;
             }
-
-            // Firebase Chat Implementation
-            const firebaseConfig = {
-                apiKey: "AIzaSyA09UwnVN0gTIHXjZokBBBXCEGyWrZ9rBk",
-                authDomain: "etmsdrive-89370.firebaseapp.com",
-                databaseURL: "https://etmsdrive-89370.firebaseio.com/",
-                projectId: "etmsdrive-89370",
-                storageBucket: "etmsdrive-89370.appspot.com",
-                messagingSenderId: "351746301370",
-                appId: "1:351746301370:android:361973f28e3375bc"
-            };
-
-            let isNewMessage = false;
-            var _routeId = routeid;
-            var _driverNo = driver_contact1;
-            var _empName = emp_contact;
-
-            // console.log(console.log('Route ID:', _routeId););
-            // console.log(console.log('Driver Number:', _driverNo););
-            // console.log(console.log('Employee Number:', _empName););
-
-            firebase.initializeApp(firebaseConfig);
-            const database = firebase.database();
-
-            if (firebase.messaging.isSupported()) {
-                const messaging = firebase.messaging();
-
-                if ("serviceWorker" in navigator) {
-                    navigator.serviceWorker
-                        .register("/firebase-messaging-sw.js")
-                        .then((registration) => {
-                            messaging.useServiceWorker(registration);
-                        })
-                        .catch((error) => {
-                            console.error("Service Worker registration failed:", error);
-                        });
-                }
-
-                messaging.requestPermission()
-                    .then(() => {
-                        return messaging.getToken();
-                    })
-                    .then(token => {
-                        // console.log(console.log('FCM Token:', token););
-                    }).catch((error) => {
-                        // console.log(console.log('Error requesting permission:', error););
-                    });
-
-                messaging.onMessage(function (message) {
-                    // console.log(console.log("onMessage event fired", message););
-                });
+        
+            // Create an animated route
+            createAnimatedRoute(waypoints, carPosition) {
+                this.clearRoute();
+                if (waypoints.length < 2) return;
+                this.addCarOnRoute(waypoints, carPosition);
+                this.map.fitBounds(this.routePolyline.getBounds(), { padding: [20, 20] });
             }
-
-            const messageInput = document.getElementById('message-input');
-            const sendButton = document.getElementById('send-button');
-            const chatMessages = document.getElementById('chat-messages');
-
-            const routeID = _routeId;
-            const driverID = _driverNo;
-            const currentUserID = _empName;
-            var driverFCMToken;
-
-            const messagesRef = database.ref(`chats/trips/${routeID}`);
-
-            messagesRef.once("value")
-                .then(function (snapshot) {
-                    const tripData = snapshot.val();
-                    if (tripData) {
-                        driverFCMToken = tripData.driverFCMToken;
-                        if (driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken.trim() !== '') {
-                            // console.log(console.log("Driver's FCM Token:", driverFCMToken););
-                        } else {
-                            // console.log(console.log("Driver's FCM Token is not available or invalid."););
-                        }
-                    } else {
-                        // console.log(console.log("Trip data not found."););
-                    }
-                })
-                .catch(function (error) {
-                    console.error("Error fetching trip data:", error);
-                });
-
-            messageInput.addEventListener('keyup', function (event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    sendMessage();
-                }
-            });
-
-            sendButton.addEventListener('click', () => {
-                sendMessage();
-            });
-
-            function sendMessage() {
-                const messageText = messageInput.value.trim();
-                if (messageText !== '') {
-                    const newMessageRef = database.ref(`chats/trips/${routeID}/messages`).push();
-                    newMessageRef.set({
-                        sender: currentUserID,
-                        receiver: driverID,
-                        content: messageText,
-                        is_read: false,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    
-                    const tokenReference = database.ref(`chats/trips/${routeID}`);
-                    tokenReference.once("value").then(function(snapshot){
-                        const tripData = snapshot.val();
-                        if(tripData){
-                            driverFCMToken = tripData.driverFCMToken;
-                            if (driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken.trim() !== '') {
-                                // console.log(console.log('FCM Token:', driverFCMToken););
-                                sendPushNotification(driverFCMToken, messageText);
-                                messageInput.value = '';
-                            }
-                        }
-                    });
-                }
+        
+            // Add the car to the route and start animation
+            addCarOnRoute(waypoints, carPosition) {
+                if (!waypoints.length) return;
+                this.addCarMarker(carPosition[0], carPosition[1]);
+                this.animateCarAlongRoute(waypoints);
             }
-
-            database.ref(`chats/trips/${routeID}/messages`).on('child_added', snapshot => {
-                const message = snapshot.val();
-
-                if (message.receiver === currentUserID) {
-                    // Handle incoming message
-                }
-
-                if (message.sender === currentUserID || message.receiver === currentUserID) {
-                    // console.log(console.log("this_user_message", message););
-                    const messageElement = document.createElement('div');
-                    const messageContent = document.createElement('div');
-                    const timestampElement = document.createElement('div');
-                    messageContent.innerText = message.content;
-                    const timestamp = new Date(message.timestamp);
-                    const formattedTime = timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-                    timestampElement.classList.add('timestamp');
-                    timestampElement.innerText = formattedTime;
-
-                    messageElement.appendChild(messageContent);
-                    messageElement.appendChild(timestampElement);
-
-                    if (message.sender === currentUserID) {
-                        messageElement.classList.add('chats', 'sender');
-                    } else {
-                        if (isNewMessage) {
-                            showNotification('New Message', message.content);
-                        }
-                        isNewMessage = true;
-                        messageElement.classList.add('chats', 'recevier');
-                    }
-                    messageElement.classList.add('animate__animated', 'animate__headShake');
-                    chatMessages.appendChild(messageElement);
-                }
-            });
-
-            function sendPushNotification(recipientFCMToken, message) {
-                fetch('https://fcm.googleapis.com/fcm/send', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: 'Bearer AAAAUeW2nbo:APA91bFykoDdjXFrBo4qoRh0SvR7twUvPet-onaHvy29OGV7eJR7uMSaw042aEtC0VAEZmlYUd9eeVNfFz4DuifRAiePprBKf2cE7pHIkF1DZdY5fHG7NDqOazTna5rlFkxUlXrOcEpgtSJPL27-l_QGLlmhutR_Hg',
-                    },
-                    body: JSON.stringify({
-                        to: recipientFCMToken,
-                        notification: {
-                            title: 'New Message',
-                            body: message,
-                            click_action: 'your-action-url',
-                        },
-                    }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // console.log(console.log('Push notification sent:', data););
-                })
-                .catch(error => {
-                    console.error('Error sending push notification:', error);
-                });
-            }
-
-            function showNotification(title, body) {
-                if (!('Notification' in window)) {
-                    // console.log(console.log('This browser does not support notifications.'););
+        
+            // Animate the car along the full route with rotation
+            animateCarAlongRoute(waypoints) {
+                if (!this.carMarker || waypoints.length < 2) return;
+        
+                if (typeof this.carMarker.moveTo !== 'function') {
+                    console.warn("Car marker is not a MovingMarker instance. Skipping route animation.");
                     return;
                 }
-
-                if (Notification.permission === 'granted') {
-                    const notification = new Notification(title, { body });
-                } else if (Notification.permission !== 'denied') {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            const notification = new Notification(title, { body });
+        
+                const durations = [];
+                for (let i = 0; i < waypoints.length - 1; i++) {
+                    const distance = this.calculateDistance(waypoints[i], waypoints[i + 1]);
+                    const duration = (distance / 30) * 3600 * 1000; // Assume 30 km/h for animation speed
+                    durations.push(Math.max(duration, 1000));
+                }
+        
+                this.carMarker.setLatLng(waypoints);
+                this.carMarker.setDurations(durations);
+                this.carMarker.start();
+        
+                this.carMarker.on('move', (e) => {
+                    const currentLatLng = e.latlng;
+                    // Only rotate if there was a previous position to calculate bearing from
+                    if (this.previousLatLng) {
+                        const bearing = this._calculateBearing(
+                            this.previousLatLng.lat, this.previousLatLng.lng,
+                            currentLatLng.lat, currentLatLng.lng
+                        );
+                        // 🔧 FIX: Target the inner rotatable element for rotation
+                        const rotatableElement = this._getRotatableCarIconElement();
+                        if (rotatableElement) {
+                            rotatableElement.style.transform = `rotate(${bearing}deg)`;
                         }
+                    }
+                    this.previousLatLng = currentLatLng;
+                });
+            }
+        
+            // Update car position with rotation
+            updateCarPosition(newLat, newLng, animate = true) {
+                if (!this.carMarker) {
+                    this.addCarMarker(newLat, newLng);
+                    return;
+                }
+        
+                const newLatLng = L.latLng(newLat, newLng);
+                
+                if (animate && typeof this.carMarker.moveTo === 'function') {
+                    const currentPos = this.carMarker.getLatLng();
+                    const distance = currentPos.distanceTo(newLatLng);
+                    const duration = Math.max((distance / 25) * 1000, 2000); // Assume 25 m/s
+        
+                    // Calculate bearing from current position to new position
+                    const bearing = this._calculateBearing(
+                        currentPos.lat, currentPos.lng,
+                        newLat, newLng
+                    );
+                    
+                    // 🔧 FIX: Target the inner rotatable element for rotation
+                    const rotatableElement = this._getRotatableCarIconElement();
+                    if (distance > 1 && rotatableElement) { 
+                        rotatableElement.style.transform = `rotate(${bearing}deg)`;
+                    }
+        
+                    this.carMarker.moveTo(newLatLng, duration);
+                    this.previousLatLng = newLatLng; // Update previous position for next bearing calculation
+                } else {
+                    this.carMarker.setLatLng(newLatLng);
+                    this.previousLatLng = newLatLng; // Update previous position even if not animating
+                }
+        
+                this.map.panTo(newLatLng);
+            }
+            
+            // Helper to calculate bearing between two points
+            _calculateBearing(lat1, lon1, lat2, lon2) {
+                const toRadians = (deg) => deg * Math.PI / 180;
+                const toDegrees = (rad) => rad * 180 / Math.PI;
+        
+                const φ1 = toRadians(lat1);
+                const φ2 = toRadians(lat2);
+                const Δλ = toRadians(lon2 - lon1);
+        
+                const y = Math.sin(Δλ) * Math.cos(φ2);
+                const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+        
+                let bearing = toDegrees(Math.atan2(y, x));
+                return (bearing + 360) % 360;
+            }
+        
+            
+            // Add markers for each employee stop
+            addRouteMarkers(employeeData) {
+                employeeData.forEach(employee => {
+                    if (employee.lat && employee.lng) {
+                        const iconUrl = employee.trackingStatus === 'Boarded' 
+                            ? `images/boarded/number-${employee.stopNo}.png`
+                            : `images/not_boarded/number-${employee.stopNo}.png`;
+        
+                        const markerIcon = L.icon({
+                            iconUrl: iconUrl,
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12],
+                        });
+        
+                        const marker = L.marker([employee.lat, employee.lng], { 
+                            icon: markerIcon 
+                        }).addTo(this.map);
+        
+                        marker.bindPopup(`
+                            <div>
+                                <strong>${employee.empName || 'Employee'}</strong><br>
+                                Stop: ${employee.stopNo}<br>
+                                Status: ${employee.trackingStatus}
+                            </div>
+                        `);
+                        this.employeeMarkers.push(marker);
+                    }
+                });
+            }
+        
+            // Calculate distance between two points (using Leaflet's built-in method for LatLng objects)
+            calculateDistance(point1, point2) {
+                return L.latLng(point1).distanceTo(L.latLng(point2)) / 1000; // returns distance in km
+            }
+        
+            // Clear existing route layers
+            clearRoute() {
+                if (this.routePolyline) this.map.removeLayer(this.routePolyline);
+                if (this.antPath) this.map.removeLayer(this.antPath);
+                this.employeeMarkers.forEach(marker => this.map.removeLayer(marker));
+                this.routePolyline = null;
+                this.antPath = null;
+                this.employeeMarkers = [];
+            }
+        
+            // Create a simple straight-line route
+            createSimpleRoute(start, waypoints, end) {
+                const allPoints = [start, ...waypoints, end];
+                this.createAnimatedRoute(allPoints, start);
+                return allPoints;
+            }
+        
+            async fetchLiveETAs(driverLat, driverLng, employees, city = "delhi") {
+                const coords = [[driverLng, driverLat], ...employees.map(e => [e.lng, e.lat])];
+        
+                try {
+                    const response = await fetch('https://mapapi.etmsonline.in/table?annotations=duration,distance', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            city,
+                            coordinates: coords
+                        })
+                    });
+                    const data = await response.json();
+        
+                    if (data && data.durations && data.durations.length) {
+                        return data.durations[0]; // first row: driver to employees
+                    }
+                    return [];
+                } catch (error) {
+                    console.error("Error fetching ETA from OSRM:", error);
+                    return [];
+                }
+            }
+        
+            updateEtaListUI(employees, durations) {
+                const etaListEl = document.getElementById('etaList');
+                if (!etaListEl) return;
+        
+                // Clear previous
+                etaListEl.innerHTML = '';
+        
+                durations.forEach((seconds, index) => {
+                    const etaMins = Math.round(seconds / 60);
+                    const emp = employees[index];
+                    const li = document.createElement('li');
+                    li.className = 'mb-1';
+                    li.innerHTML = `
+                        <strong>${emp.empName || 'Employee'}</strong> 
+                        (Stop ${emp.stopNo}): 
+                        ETA <span class="badge bg-success">${etaMins} mins</span>
+                    `;
+                    etaListEl.appendChild(li);
+                });
+            }
+        
+            async updateEmployeeETAs(driverLat, driverLng, employees) {
+            }
+        
+            centerMap(lat, lng, zoom = 14) {
+                this.map.setView([lat, lng], zoom);
+            }
+        
+            panTo(lat, lng) {
+                this.map.panTo([lat, lng]);
+            }
+        }
+        
+        // Global variables
+                var BASE_URL;
+                var URL_CabValidation;
+                var URL_ProfilePicture;
+                var URL_CallingApi;
+                var URL_RouteInfo;
+                var URL_RouteDetail;
+                var URL_RouteDetailShuttle;
+                var URL_GetGpsLogger;
+                var URL_UpdateCabNoShow;
+                var URL_UpdateTrackingSelf;
+        
+                var directionsService;
+                var distanceMatrixService;
+                var directionsRenderer;
+                var value;
+                var value1;
+                var vs;
+                var routeid;
+                var empid;
+                var clientid;
+                var locupdate;
+                var showMapUpdate;
+                var facility;
+                var cabnoshowradius;
+                var driver_contact = [];
+                var driver_contact1;
+                var empname;
+                var emp_contact;
+                var homelatlng;
+                var profileurl;
+                var EscortImage;
+                var driverName;
+                var vehicleRegNo = [];
+                var vehicleType;
+                var tptContactNo;
+                var b2bFlag = 1;
+                var emplatlng1;
+                var emplatlng;
+                var pp = [];
+                var myTrackingStatus = '';
+                var isproximity = 1;
+                var eta = '';
+                var b2bflag = 1;
+                var url = [];
+                var fromloc;
+                var toloc = '';
+                var OTP;
+                var gender;
+                var tripType;
+                var employeeid;
+                var poly = [];
+                var decorator;
+                var line;
+                var interval = 0;
+                var first = true;
+                var first1 = true;
+                var driverlat; 
+                var driverlng;
+                var position = [];
+                var marker;
+                var marker3;
+                var heading = [];
+                var driverMarker;
+                var driverMarkerMmi;
+                let path = [];
+                var newPosition;
+                var mNewPosition = [];
+                var routeDetFrequency = 90000;
+                var myUrl = window.location.href;
+                var exoPhone;
+                var isShuttle = false;
+                let employeeData = []; // define globally
+        
+                // Map service instance
+                let mapService;
+        
+                const monthAbbr = [
+                    "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+                ];
+        
+                // DOM elements
+                const firstModal = document.getElementById('firstModal');
+                const secondModal = document.getElementById('secondModal');
+                const cabNoShowButton = document.getElementById('cabNoShowButton');
+                const aTag = document.getElementById('aTag');
+                const chatButton = document.getElementById('chatButton');
+                const shareButton = document.getElementById('shareButton');
+                const callButton = document.getElementById('callButton');
+                const helpButton = document.getElementById('helpButton');
+                const selfNoShowButton = document.getElementById('selfNoShowButton');
+                const qrCodeButton = document.getElementById('qrCodeButton');
+                const selfNoShow = document.getElementById('selfNoShow');
+                const carouselIndicators = document.getElementById('carousel-indicators');
+                const carouselItem1 = document.getElementById('carousel-item1');
+                const escortId = document.getElementById('escortId');
+                const guardName = document.getElementById('guardName');
+                const tdName = document.getElementById('tdName');
+                const tdName1 = document.getElementById('tdName1');
+                const tdRegistrationNo = document.getElementById('tdRegistrationNo');
+                const tdRegistrationNo1 = document.getElementById('tdRegistrationNo1');
+                const tdVehicleType = document.getElementById('tdVehicleType');
+                const tdVehicleType1 = document.getElementById('tdVehicleType1');
+                const imageDriver = document.getElementById('imageDriver');
+                const imageDriver1 = document.getElementById('imageDriver1');
+                const imageGuard = document.getElementById('imageGuard');
+                const boardingStatus = document.getElementById('boardingStatus');
+                const Otp = document.getElementById('Otp');
+                const etaDiv = document.getElementById('etaDiv');
+                const offCanvasBottom = document.getElementById('offCanvasBottom1');
+                const chatBox = document.getElementById('chatBox');
+                const callAction = document.getElementById('callAction');
+                const callDriverConfirmationButton = document.getElementById('callDriverConfirmationButton');
+                const popupLocationNotAccessible = document.getElementById('popupLocationNotAccessible');
+                const popupNetworkConnection = document.getElementById('popupNetworkConnection');          
+                const qrCodeModal = document.getElementById('qrCodeModal');
+        
+                // Initialize on DOM content loaded
+                document.addEventListener('DOMContentLoaded', function(){
+                    getRouteDetailsFromQueryString();
+                    startRouteDetUpdates();
+                    loadMap(facility);
+                });
+        
+                // Helper functions
+                function ajaxRequest(url, data, callback, method, username, password) {
+                    const ajaxOptions = {
+                        type: method,
+                        url: url,
+                        cache: false,
+                        crossDomain: true,
+                        data: method === "GET" ? data : JSON.stringify(data),
+                        contentType: method === "GET" ? undefined : "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: callback,
+                        failure: function (response) {
+                            console.error("Failure:", response.d);
+                        },
+                        error: function (response) {
+                            console.error("Error:", response.d);
+                        }
+                    };
+        
+                    if (username && password) {
+                        ajaxOptions.username = username;
+                        ajaxOptions.password = password;
+                    }
+        
+                    $.ajax(ajaxOptions);
+                }
+        
+                function ajaxRequestPromise(url, data, method, username, password) {
+                    return new Promise((resolve, reject) => {
+                        ajaxRequest(url, data, resolve, method, username, password);
                     });
                 }
-            }
-
-        }, 3000);        
-    </script>
-
-    <!-- Accessibility: Announce cab location on map keyboard/tap for blind users -->
-    <script>
-    (function() {
-        const mapDiv = document.getElementById('map');
-        if (mapDiv) {
-            mapDiv.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    announceCabLocation();
+        
+                function checkForAccenture(clientid, appwimc){
+                    if ((clientid == '4' || clientid == '14' || clientid == '13' || clientid == '15' || clientid == '10' || clientid == '25' || clientid == '26' || clientid == '22') && (appwimc == 0)) {
+                        $('#firstModal').modal('show');
+                        cabNoShowButton.style.display = 'block';
+                        chatButton.style.display = 'block';
+                        return;
+                    }
+                    
+                    firstModal.style.display = 'none';
+                    cabNoShowButton.style.display = 'block';
+                    chatButton.style.display = 'block';
+                    selfNoShowButton.style.display = 'block';
+                    return;
                 }
-            });
-            mapDiv.addEventListener('click', function(e) {
-                announceCabLocation();
-            });
-        }
-
-        async function announceCabLocation() {
-            // Use the latest cab coordinates
-            const lat = window.driverlat;
-            const lng = window.driverlng;
-            if (!lat || !lng) {
-                announce('Cab location is not available at the moment.');
-                return;
-            }
-            const apiKey = "AIzaSyDKatXVfQNHCj7iNP95PhsOkO9vFmYI-bA";
-            const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+        
+                function getQueryStringValue(key) {
+                    return unescape(
+                        window.location.search.replace(
+                            new RegExp(
+                                "^(?:.*[&\\?]" +
+                                escape(key).replace(/[\.\+\*]/g, "\\$&") +
+                                "(?:\\=([^&]*))?)?.*$",
+                                "i"
+                            ),
+                            "$1"
+                        )
+                    );
+                }
+        
+                function getRouteDetailsFromQueryString(){
+                    value = getQueryStringValue("v");
+                    value1 = getQueryStringValue("s");
+                    vs = value.substring(4, value.length);
+                    
+                    clientid = parseInt(value.substring(0, 4));
+        
+                    const shuttleRoute = monthAbbr.find(month => vs.includes(month));
+                    if(shuttleRoute){
+                        routeid = vs.substring(0, vs.indexOf(shuttleRoute) + 5);
+                        empid = vs.substring(vs.indexOf(shuttleRoute) + 5, vs.length);    
+                    }
+                    else{
+                        if (value.length == 25) {
+                            empid = (value.slice(value.length - 8, value.length));
+                            routeid = vs.substring(0, vs.length - 8);
+                        }
+                        else if (value.length == 24) {
+                            empid = (value.slice(value.length - 7, value.length));
+                            routeid = vs.substring(0, vs.length - 7);
+                        }
+                        else if (value.length == 23 || value.length == 21) {
+                            empid = (value.slice(value.length - 6, value.length));
+                            routeid = vs.substring(0, vs.length - 6);
+                        }
+                        else if (value.length == 22 || value.length == 20) {
+                            empid = (value.slice(value.length - 5, value.length));
+                            routeid = vs.substring(0, vs.length - 5);
+                        }
+                        else if (value.length == 19) {
+                            empid = (value.slice(value.length - 4, value.length));
+                            routeid = vs.substring(0, vs.length - 4);
+                        }
+                    }
+        
+                    var murl = myUrl.split("&");
+                    var appwimc = 0;
+                    var surl;
+                    if (murl[1] == 'app=1') {
+                        appwimc = 1;
+                        surl = murl[2];
+                    }
+                    else if (murl[2] == 'app=1') {
+                        appwimc = 1;
+                        surl = murl[1];
+                    }
+                    else {
+                        surl = murl[1];
+                        appwimc = 0;
+                    }
+        
+                    checkForAccenture(clientid, appwimc);
+                    fetchGetClientDetailsById(value, value1, clientid);
+                }
+        
+                function arePointsNear(checkPoint, centerPoint, km) {
+                    var ky = 40000 / 360;
+                    var kx = Math.cos((Math.PI * centerPoint.lat) / 180.0) * ky;
+                    var dx = Math.abs(centerPoint.lng - checkPoint.lng) * kx;
+                    var dy = Math.abs(centerPoint.lat - checkPoint.lat) * ky;
+                    return Math.sqrt(dx * dx + dy * dy) <= km;
+                }
+        
+                function getLocation() {
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(showPosition, showError);
+                    } else {
+                        alert("Geolocation is not supported by this browser.");
+                    }
+                }
+        
+                function showError(error) {
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            alert("User denied the request for Geolocation.");
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            alert("Location information is unavailable.");
+                            break;
+                        case error.TIMEOUT:
+                            alert("The request to get user location timed out.");
+                            break;
+                        case error.UNKNOWN_ERROR:
+                            alert("An unknown error occurred.");
+                            break;
+                    }
+                }
+        
+                async function showPosition(position) {
+                    var homelatlng = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    var n = arePointsNear(homelatlng, emplatlng1, cabnoshowradius);
+                    if (n == true) {
+                        var confirmArrived = confirm('Do you want to mark the cab as no-show?');
+                        if (confirmArrived == true) {
+                            const response = await ajaxRequestPromise(URL_UpdateCabNoShow, {"routeid": routeid, "empid": empid, "trackingaction": employeeid, "lat": '0', "lng": '0'}, "POST", null, null);
+                            const details  = JSON.parse(response.d);
+                            if(details != null){
+                                alert('Thank you for the NO Show alert, we will notify the driver immediately.');
+                                cabNoShowButton.style.display = 'none';
+                            }  
+                        }
+                        else {
+                        }
+                    }
+                    else {
+                        alert('Current location does not match pick-up location. Reach pick-up point to confirm Cab as No show. ');
+                    }
+                }
+        
+                cabNoShowButton.addEventListener("click", function(event){
+                    event.preventDefault();
+                    getLocation();
+                });
+        
+                // QR Code functionality
+                document.getElementById("qrCodeButton").addEventListener("click", function () {
+                    var qrModal = new bootstrap.Modal(document.getElementById("qrCodeModal"));
+                    qrModal.show();
+                    startQRScanner();
+                });
+        
+                function startQRScanner() {
+                    const qrCodeScanner = new Html5Qrcode("qr-reader");
+        
+                    qrCodeScanner.start(
+                        { facingMode: "environment" },
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 }
+                        },
+                        (decodedText, decodedResult) => {
+                            alert("QR Code Scanned: " + decodedText);
+                            // Close modal after successful scan
+                            var modal = bootstrap.Modal.getInstance(document.getElementById("qrCodeModal"));
+                            modal.hide();
+                        },
+                        (errorMessage) => {
+                            console.warn("QR Code scan error:", errorMessage);
+                        }
+                    ).catch((err) => {
+                        console.error("Failed to start QR scanner:", err);
+                    });
+        
+                    // Stop scanner when modal is closed
+                    document.getElementById("qrCodeModal").addEventListener("hidden.bs.modal", function () {
+                        qrCodeScanner.stop().catch((err) => console.error("Error stopping scanner:", err));
+                    });
+                }
+                function share() {
+                    var isMobile = {
+                        Android: function () {
+                            return navigator.userAgent.match(/Android/i);
+                        },
+                        BlackBerry: function () {
+                            return navigator.userAgent.match(/BlackBerry/i);
+                        },
+                        iOS: function () {
+                            return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+                        },
+                        Opera: function () {
+                            return navigator.userAgent.match(/Opera Mini/i);
+                        },
+                        Windows: function () {
+                            return navigator.userAgent.match(/IEMobile/i);
+                        },
+                        any: function () {
+                            return (
+                                isMobile.Android() ||
+                                isMobile.BlackBerry() ||
+                                isMobile.iOS() ||
+                                isMobile.Opera() ||
+                                isMobile.Windows()
+                            );
+                        }
+                    };
+        
+                    if (isMobile.any()) {
+                        var url;
+                        if (gender == 'M') {
+                            url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view his trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                        }
+                        else if (gender == 'F') {
+                            url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view her trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                        }
+                        else {
+                            url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view their trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                        }
+                        var message = encodeURIComponent(url);
+                        var whatsapp_url = "whatsapp://send?text=" + message;
+                        window.location.href = whatsapp_url;
+                    } else {
+                        alert("Please share this article in mobile device");
+                    }
+                }
+        
+                function share1() {
+                    var getOS = function () {
+                        var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                        if (
+                            userAgent.match(/iPad/i) ||
+                            userAgent.match(/iPhone/i) ||
+                            userAgent.match(/iPod/i)
+                        ) {
+                            return "iOS";
+                        } else if (userAgent.match(/Android/i)) {
+                            return "Android";
+                        } else {
+                            return "unknown";
+                        }
+                    }
+        
+                    var device = getOS();
+                    var url;
+        
+                    if (gender == 'M') {
+                        url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view his trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                    }
+                    else if (gender == 'F') {
+                        url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view her trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                    }
+                    else {
+                        url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view their trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                    }
+        
+                    var message = encodeURIComponent(url);
+                    
+                    if (device == "iOS") {
+                        window.location.href = "sms: &body=" + message;
+                    }
+                    if (device == "Android") {
+                        window.location.href = "sms:?body=" + message;
+                    }
+                }
+        
+                function secondsToHms(d) {
+                    d = Number(d);
+                    var h = Math.floor(d / 3600);
+                    var m = Math.floor(d % 3600 / 60);
+                    var s = Math.floor(d % 3600 % 60);
+        
+                    var hDisplay = "", mDisplay = "", sDisplay = "";
+                    if (h > 0) {
+                        if (h == 1) {
+                            hDisplay = h + " hr ";
+                        }
+                        else {
+                            hDisplay = h + " hrs ";
+                        }
+                    }
+                    if (m > 0) {
+                        if (m == 1) {
+                            mDisplay = m + " min ";
+                        } else {
+                            mDisplay = m + " mins ";
+                        }
+                    }
+                    if (s > 0) {
+                        sDisplay = s + "s";
+                    }
+                    if (!(h > 0) && !(m > 0) && s > 0) {
+                        return "Soon";
+                    }
+        
+                    return hDisplay + mDisplay;
+                }
+                
+                async function fetchGetClientDetailsById(value, value1, clientid){
+                    if(value || value1){
+                        const response = await ajaxRequestPromise("https://www.etmsdrive.in/appControlRest/api/v1/getClientDetailById", {CID: clientid}, "GET", "user1", "Acc@bang10");
+                        const details = JSON.parse(response);
+                        createUrlFromClientDetails(details[0]);
+                    }
+                }
+        
+                function createUrlFromClientDetails(data){
+                    BASE_URL = data.trackurl;
+                    URL_CabValidation = BASE_URL + "MyCabValidation";
+                    URL_ProfilePicture = data.photourl;
+                    URL_CallingApi = BASE_URL + "CallingAPI";
+                    URL_RouteInfo = BASE_URL + "GetRouteInfoMyCab";
+                    URL_RouteDetail = BASE_URL + "GetRouteDetail";
+                    URL_RouteDetailShuttle = BASE_URL + "GetRouteDetailShuttle";
+                    URL_GetGpsLogger = BASE_URL + "GetGPSLogger";
+                    URL_UpdateCabNoShow = BASE_URL + 'UpdateCabNoShow';
+                    URL_UpdateTrackingSelf = BASE_URL + 'UpdateTrackingSelf';
+        
+                    fetchRouteInfoData();
+                }
+        
+                async function fetchRouteInfoData(){
+                    const response = await ajaxRequestPromise(URL_RouteInfo, {RouteId: routeid}, "POST", "user1", "Acc@bang10");
+                    const details = JSON.parse(response);
+                    displayDetails(details[0]);
+                }
+        
+                async function displayDetails(data){
+                    if(data.routeID != 'NA'){
+                        facility = data.facility;
+        
+                        if(data.chatonlyforpwd == '0'){
+                            chatButton.style.display = 'block';
+                        }
+                        else if(data.chatonlyforpwd == '1'){
+                            if(data.is_pwd == '1'){
+                                chatButton.style.display = 'block';
+                            }
+                            else{
+                                chatButton.style.display = 'none';
+                            }
+                        }
+                        else{
+                            chatButton.style.display = 'none';
+                        }
+        
+                        if(data.isshuttle == 1){
+                            isShuttle = true;
+                            selfNoShowButton.style.display = 'none';
+                            cabNoShowButton.style.display = 'none';
+                            callButton.style.display = 'none';
+                            etaDiv.style.display = 'none';
+                            qrCodeButton.style.display = 'none';
+                        }
+                    }
+        
+                    cabnoshowradius = data.cabnoshowradius / 1000;
+                    driver_contact.push(data.driverContact);
+                    driver_contact1 = data.driverContact;
+                    var profileUrl = URL_ProfilePicture + data.driverContact + ".jpeg";
+                    var guardImage = data.guardphotourl;
+        
+                    var p = data.vehicleRegNo;
+                    if (data.isb2b == "1") {
+                        b2bFlag = "3";
+                    } else {
+                        b2bFlag = "1";
+                    }
+                    
+                    if (data.guardid == '' || data.guardid == null) {
+                        carouselIndicators.style.display = 'none';
+                        carouselItem1.style.display = 'none';
+                        const carouselExampleIndicators = document.getElementById('carouselExampleIndicators');
+                        carouselExampleIndicators.setAttribute('data-bs-touch', "false");
+                    }
+                    else {
+                    }
+        
+                    driverName = data.driverName;
+                    vehicleRegNo.push(p);
+                    vehicleType = data.vehicleType;
+                    tptContactNo = data.tptContactNo;
+                    aTag.setAttribute('data-rel', 'external');
+                    aTag.setAttribute('href', 'tel:' + tptContactNo);
+        
+                    guardName.innerText = data.guardname;
+                    escortId.innerText = data.guardid;
+        
+                    tdName.innerText = driverName;
+                    tdName1.innerText = driverName;
+                    tdRegistrationNo.innerText = vehicleRegNo;
+                    tdRegistrationNo1.innerText = vehicleRegNo;
+                    tdVehicleType.innerText = vehicleType;
+                    tdVehicleType1.innerText = vehicleType;
+        
+                    document.getElementById("imageDriver").src = profileUrl;
+                    document.getElementById("imageDriver1").src = profileUrl;
+                    document.getElementById('imageGuard').src = guardImage;
+                    
+                    fetchRouteDetailData();
+                }
+        
+                async function fetchRouteDetailData(){
+                    var response;
+                    if(isShuttle){
+                       response = await ajaxRequestPromise(URL_RouteDetailShuttle, {RouteId: routeid, flag: b2bFlag}, "POST", "user1", "Acc@bang10");     
+                    }
+                    else{
+                        response = await ajaxRequestPromise(URL_RouteDetail, {RouteId: routeid, flag: b2bFlag}, "POST", "user1", "Acc@bang10");
+                    }
+                    
+                    const details = JSON.parse(response);
+                    const details1 = details;
+                                        
+                    const filteredData = details.filter(item => (item.id == empid));
+                                        
+                    displayDetails1(filteredData[0], details1);
+                }
+        
+                function displayDetails1(data, details){
+                    // --- SHUTTLE ROUTE HANDLING ---
+                    if (isShuttle && Array.isArray(details)) {
+                        cabNoShowButton.style.display = 'none';
+                        chatButton.style.display = 'none';
+                        selfNoShowButton.style.display = 'none';
+                        etaDiv.style.display = 'none';
+                        Otp.style.display = 'none';
+                        if (value1 == 's') {
+                            callButton.style.display = 'none';
+                            callAction.style.display = 'none';
+                        } else {
+                            callButton.style.display = 'block';
+                            callAction.style.display = 'block';
+                        }
+                        // Plot the shuttle route
+                        if (mapService) {
+                            const waypoints = details
+                                .filter(item => item.lat && item.lng)
+                                .map(item => [parseFloat(item.lat), parseFloat(item.lng)]);
+                            if (waypoints.length > 1) {
+                                if (mapService.routePolyline) {
+                                    mapService.map.removeLayer(mapService.routePolyline);
+                                }
+                                mapService.routePolyline = L.polyline(waypoints, {
+                                    color: '#4285F4',
+                                    weight: 4,
+                                    opacity: 0.8,
+                                }).addTo(mapService.map);
+                                mapService.map.fitBounds(mapService.routePolyline.getBounds(), { padding: [20, 20] });
+                                mapService.addCarMarker(waypoints[0][0], waypoints[0][1], true);
+                            }
+                        }
+                        fetchGpsLoggerData(details);
+                        return; // Do not process further for shuttle
+                    }
+                    // --- TRIP ENDED CHECK ---
+                    if (data.actVehicleEndTime && data.actVehicleEndTime !== "Date(0)" && data.actVehicleEndTime !== null) {
+                        tripEnded = true;
+                        // Show "Trip Ended" in the UI
+                        boardingStatus.innerHTML = `<h3><strong>TRIP ENDED</strong></h3>`;
+                        boardingStatus.style.display = 'inline-block';
+                        Otp.style.display = 'none';
+                        // Hide/disable other UI elements as needed
+                        callButton.style.display = 'none';
+                        helpButton.style.display = 'none';
+                        selfNoShowButton.style.display = 'none';
+                        chatButton.style.display = 'none';
+                        etaDiv.style.display = 'none';
+                        chatBox.style.display = 'none';
+                        cabNoShowButton.style.display = 'none';
+                        callAction.style.display = 'none';
+                        // Stop all intervals
+                        if (typeof locupdate !== 'undefined') clearInterval(locupdate);
+                        if (typeof showMapUpdate !== 'undefined') clearInterval(showMapUpdate);
+                        // Optionally, clear map markers
+                        if (mapService) {
+                            mapService.clearRoute();
+                            if (typeof currentEmployeeHomeMarker !== 'undefined' && currentEmployeeHomeMarker) {
+                                mapService.map.removeLayer(currentEmployeeHomeMarker);
+                                currentEmployeeHomeMarker = null;
+                            }
+                            if (mapService.carMarker) {
+                                mapService.map.removeLayer(mapService.carMarker);
+                                mapService.carMarker = null;
+                            }
+                        }
+                        if (typeof employeeEtaInterval !== 'undefined') clearInterval(employeeEtaInterval);
+                        return; // Exit early, don't process further
+                    }
+                    else{
+                    }
+        
+                    if(data.id == empid){
+                        gender = data.Gender;
+                        exoPhone = data.exophone;
+                        employeeid = data.employeeID;
+                        tripType = data.tripType;
+        
+                        if ((data.CabNoShow == 0) && (clientid == '10' || clientid == '14' || clientid == '15' || clientid == '22')) {
+                            cabNoShowButton.style.display = 'block';
+                        }
+                        else {
+                            cabNoShowButton.style.display = 'none';
+                        }
+        
+                        if (data.tripType == 'D') {
+                            cabNoShowButton.style.display = 'none';
+                            chatButton.style.display = 'none';
+                        }
+        
+                        if (clientid == '10' || clientid == '14' || clientid == '15' || clientid == '22' || clientid == '25') {
+                            shareButton.style.display = 'block';
+                        }
+                        else {
+                            shareButton.style.display = 'none';
+                        }
+        
+                        empname = data.empName;
+                        emp_contact = data.EmpMobile;
+        
+                        emplatlng1 = { lat: data.lat, lng: data.lng };
+        
+                        myTrackingStatus = data.trackingStatus;
+                        if ((myTrackingStatus == "Boarded" || tripType == 'D') || (myTrackingStatus == "No-Show" || tripType == 'D')) {
+                            routeDetFrequency = 10000000;
+                        }
+                        
+                        if (myTrackingStatus != '----') {
+                            boardingStatus.innerHTML = `<h3><strong>${myTrackingStatus.toUpperCase()}</strong></h3>`;
+                            boardingStatus.style.display = 'inline-block';
+                        }
+                        else {
+                            boardingStatus.style.display = 'none';
+                            OTP = data.boardingOTP;
+                            if (OTP != null) {
+                                Otp.innerHTML = `<h3><strong>OTP: ${OTP} </strong></h3>`;
+                                Otp.style.display = 'inline-block';
+                            }
+                        }
+        
+                        if (myTrackingStatus == "No-Show" || data.tripType == 'D') {
+                            callButton.style.display = 'none';
+                            helpButton.style.display = 'block';
+                            selfNoShowButton.style.display = 'none';
+                            chatButton.style.display = 'none';
+                            etaDiv.style.display = 'none';
+                            Otp.style.display = 'none';
+                            chatBox.style.display = 'none';
+                            cabNoShowButton.style.display = 'none';
+                        } 
+                        else if (myTrackingStatus == "Boarded" || data.tripType == 'D') {
+                            callButton.style.display = 'none';
+                            helpButton.style.display = 'block';
+                            selfNoShowButton.style.display = 'none';
+                            chatButton.style.display = 'none';
+                            etaDiv.style.display = 'none';
+                            Otp.style.display = 'none';
+                            chatBox.style.display = 'none';
+                            cabNoShowButton.style.display = 'none';
+                        }
+                        else if (myTrackingStatus == "De-Boarded" || data.tripType == 'D') {
+                            callButton.style.display = 'none';
+                            helpButton.style.display = 'block';
+                            selfNoShowButton.style.display = 'none';
+                            chatButton.style.display = 'none';
+                            etaDiv.style.display = 'none';
+                            Otp.style.display = 'none';
+                            offCanvasBottom.style.display = 'none';
+                            chatBox.style.display = 'none';
+                            cabNoShowButton.style.display = 'none';
+                        }
+                        else if(clientid =='28' || clientid == '60'){
+                            selfNoShowButton.style.display = 'none';
+                            callButton.style.display = 'block';
+                            helpButton.style.display = 'block';
+                            etaDiv.style.display = 'none';
+                            Otp.style.display = 'block';
+                        }
+                        else {
+                            callButton.style.display = 'block';
+                            helpButton.style.display = 'block';
+                            etaDiv.style.display = 'none';
+                            Otp.style.display = 'block';
+                        }
+        
+                        callAction.style.display = 'block';
+        
+                        if (value1 == 's') {
+                            callButton.style.display = 'none';
+                            helpButton.style.display = 'block';
+                            selfNoShowButton.style.display = 'none';
+                            chatButton.style.display = 'none';
+                            etaDiv.style.display = 'none';
+                            Otp.style.display = 'none';
+                            chatBox.style.display = 'none';
+                            cabNoShowButton.style.display = 'none';
+                            callAction.style.display = 'none';
+                        }
+                        
+                        callDriverConfirmationButton.addEventListener('click', function(event){
+                            event.preventDefault();
+                            callLatch();
+                        });
+        
+                        function callLatch() {
+                            callApi();
+                        }
+        
+                        var lathome = data.lat;
+                        var lnghome = data.lng;
+                        
+                        toloc = data.lat + ',' + data.lng;
+        
+                        // Add employee marker to map
+                        if(toloc != null && mapService){
+                            mapService.addEmployeeMarker(data.lat, data.lng);
+                        }
+                                
+                        fetchGpsLoggerData(details);
+                    }
+                }
+        
+                async function callApi(){
+                    try {
+                        const response = await ajaxRequestPromise(URL_CallingApi, {empid: empid, drivermobile: driver_contact[0], type: "sun"}, "POST", null, null);
+                        updateModal("Please wait while your call is being connected", 'success');
+                    } catch(error) {
+                        updateModal("The call cannot be connected as an error was encountered", 'danger');
+                    }
+                }
+        
+        async function fetchGpsLoggerData(data){
             try {
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data.status === 'OK' && data.results.length > 0) {
-                    const address = data.results[0].formatted_address;
-                    announce('Current cab location: ' + address);
+                const rawResponse = await ajaxRequestPromise(URL_GetGpsLogger, {deviceId: routeid, vendorid: 0}, "POST", "user1", "Acc@bang10");
+                
+                const details = JSON.parse(rawResponse); 
+        
+                if (details && details.length > 0 && details[0].lat && details[0].lng) {
+                    displayDetails2(details[0], data);
                 } else {
-                    announce('Unable to retrieve the cab address.');
+                    console.warn("GPS data received, but it's empty or invalid after parsing.", details);
+                    popupLocationNotAccessible.style.display = 'block';
                 }
-            } catch (err) {
-                announce('Error fetching cab address.');
+        
+            } catch(error) {
+                console.error("Error fetching or parsing GPS data:", error);
+                if (popupNetworkConnection) {
+                    popupNetworkConnection.style.display = 'block'; 
+                } else {
+                    console.error("Error: popupNetworkConnection element not found in DOM.");
+                }
             }
         }
-
-        function announce(message) {
-            const liveRegion = document.getElementById('live-region');
-            if (liveRegion) liveRegion.textContent = message;
-            // Optional: Use speech synthesis for immediate feedback
-            if ('speechSynthesis' in window) {
-                const utter = new SpeechSynthesisUtterance(message);
-                window.speechSynthesis.speak(utter);
+        
+        function displayDetails2(data, details){
+                    
+                    var lat = data.lat;
+                    var lng = data.lng;
+                    
+                    if (lat == null || lat == undefined || lat === 0 || lng == null || lng == undefined || lng === 0) {
+                        popupLocationNotAccessible.style.display = 'block';
+                        return;
+                    } else {
+                        popupLocationNotAccessible.style.display = 'none';
+                    }
+        
+                    driverlat = data.lat;
+                    driverlng = data.lng;
+                    position = [driverlat, driverlng];
+                    fromloc = [lat, lng];
+        
+                    // Initialize map service and add car marker
+                    if (mapService) {
+                        mapService.addCarMarker(lat, lng, isShuttle);
+                        mapService.centerMap(lat, lng);
+                    }
+                }
+        
+                // 🔧 Updated map loading functions
+                async function loadMap(facility) {
+                    return await loadOpenSourceMap();
+                }
+        
+                async function loadOpenSourceMap() {
+                    try {
+                        mapService = new OpenSourceMapService();
+                        mapService.initializeMap('map');
+                        return mapService;
+                    } catch (error) {
+                        console.error('Failed to load map:', error);
+                        throw error;
+                    }
+                }
+        
+                // 🔧 Updated marker movement function
+                async function moveMarker1() {
+                    if (tripEnded) return; // Prevent further execution if trip is ended
+                    try {
+                        const response = await ajaxRequestPromise(URL_GetGpsLogger, {deviceId: routeid, vendorid: 0}, "POST", "user1", "Acc@bang10");
+                        const details = JSON.parse(response);
+                        
+                        if (details[0] && details[0].lat && details[0].lng) {
+                            const newLat = details[0].lat;
+                            const newLng = details[0].lng;
+                            
+                            // Update car position with smooth animation
+                            if (mapService && mapService.carMarker) {
+                                mapService.updateCarPosition(newLat, newLng, true);
+                            }
+                            
+                            // Update stored position
+                            position = [newLat, newLng];
+                            newPosition = [newLat, newLng];
+                        }
+                    } catch (error) {
+                        console.error('Error updating marker position:', error);
+                    }
+                }
+        
+        
+        let currentEmployeeHomeMarker = null;
+        
+        
+        async function calculateEtaAndPlotPath() {
+        
+            try {
+                const response = await ajaxRequestPromise(URL_RouteDetail, { RouteId: routeid, flag: b2bFlag }, "POST", "user1", "Acc@bang10");
+                const parsedData = JSON.parse(response);
+                employeeData = parsedData; // Store the employee data globally
+        
+                // Find the current employee's details
+                const currentEmployee = parsedData.find(item => item.id == empid);
+        
+                if (!currentEmployee || !currentEmployee.lat || !currentEmployee.lng) {
+                    console.warn("Current employee details not found or invalid coordinates.");
+                    return;
+                }
+        
+                displayDetails1(currentEmployee, parsedData);
+        
+                if (currentEmployee.trackingStatus === 'Boarded' ||
+                    currentEmployee.trackingStatus === 'No-Show' ||
+                    currentEmployee.trackingStatus === 'De-Boarded' ||
+                    currentEmployee.tripType === 'D') {
+                    
+                    document.getElementById('etaDiv').style.display = 'none'; // Hide ETA
+                    
+                    // Clear map elements if the trip is complete for this user
+                    if (mapService) {
+                        if (currentEmployeeHomeMarker) {
+                            mapService.map.removeLayer(currentEmployeeHomeMarker);
+                            currentEmployeeHomeMarker = null;
+                        }
+                        if (mapService.carMarker) {
+                            mapService.map.removeLayer(mapService.carMarker);
+                            mapService.carMarker = null;
+                        }
+                    }
+                    return; // Exit here if no further map/ETA updates are needed
+                }
+        
+        
+                if (mapService) {
+                    mapService.clearRoute(); // This will clear previous route and employee markers
+                }
+        
+        
+                if (mapService && currentEmployee.lat && currentEmployee.lng) {
+                    const homeIcon = L.icon({
+                        iconUrl: 'images/home.png', // Always use the home icon for the current user
+                        iconSize: [25, 25],
+                        iconAnchor: [12, 12],
+                    });
+                    // Ensure you remove the old one if it exists to prevent duplicates on redraw
+                    if (currentEmployeeHomeMarker) {
+                        mapService.map.removeLayer(currentEmployeeHomeMarker);
+                    }
+                    currentEmployeeHomeMarker = L.marker([currentEmployee.lat, currentEmployee.lng], { icon: homeIcon }).addTo(mapService.map);
+                }
+        
+                // --- Determine the route waypoints from cab to current employee's stop ---
+                let routeWaypoints = [];
+                let destinationLatLng = [currentEmployee.lat, currentEmployee.lng];
+        
+                // Filter for stops *before or at* the current employee's stop, including only unboarded ones
+                // This ensures the route only shows progression towards *this* employee
+                const relevantStops = parsedData
+                    .filter(item =>
+                        item.trackingStatus === "----" && // Only unboarded stops
+                        item.stopNo <= currentEmployee.stopNo // Stops on or before current employee's stop number
+                    )
+                    .sort((a, b) => a.stopNo - b.stopNo); // Ensure stops are in correct sequence
+        
+         
+                if (newPosition) { 
+                   
+                    const intermediatePoints = relevantStops
+                        .filter(item => item.id !== empid)
+                        .map(item => [item.lat, item.lng]);
+        
+        
+                    mapService.createSimpleRoute(
+                        newPosition,          // Start point: Cab's current location
+                        intermediatePoints,   // Intermediate points: Other unboarded stops on the way
+                        destinationLatLng     // End point: Current employee's home location
+                    );
+        
+        
+                    await calculateEtaOpenSource(relevantStops, currentEmployee);
+        
+                } else {
+                    console.warn("Cab's current position (newPosition) not available.");
+                    // Optionally hide ETA if cab position isn't known
+                    document.getElementById('etaDiv').style.display = 'none';
+                }
+        
+            } catch (error) {
+                console.error('Error calculating ETA and plotting path:', error);
+                // Display network connection popup if there's a fetch error
+                if (popupNetworkConnection) {
+                    popupNetworkConnection.style.display = 'block';
+                }
             }
         }
-    })();
-    </script>
-
-    <!-- Ensure all images have alt text and all buttons/inputs have accessible labels -->
-    <script>
-    (function() {
-        // Add alt text to images if missing
-        document.querySelectorAll('img').forEach(function(img) {
-            if (!img.hasAttribute('alt') || img.getAttribute('alt') === '') {
-                img.setAttribute('alt', 'Image');
+        
+        // Add at the top of your global variables
+        var tripEnded = false;
+        var employeeEtaInterval;
+        
+        // Replace the setInterval for updateEmployeeETAs with:
+        employeeEtaInterval = setInterval(async () => {
+            if (!driverlat || !driverlng || !mapService || tripEnded) return;
+            await mapService.updateEmployeeETAs(driverlat, driverlng, employeeData);
+        }, 10000); // every 10 seconds
+        
+        
+        // You will also need to adjust calculateEtaOpenSource slightly
+        // to work with the 'relevantStops' parameter you pass it.
+        
+        async function calculateEtaOpenSource(stopsOnRoute, currentEmployee) {
+            if (!stopsOnRoute.length || !newPosition || !currentEmployee) return;
+        
+            try {
+                let totalDistance = 0;
+                let currentPathPoint = newPosition; // Start from cab's current location
+        
+                // Calculate distance to each stop in order, until the current employee's stop
+                // 'stopsOnRoute' is already filtered and sorted
+                for (let i = 0; i < stopsOnRoute.length; i++) {
+                    const stop = stopsOnRoute[i];
+                    const nextPoint = [stop.lat, stop.lng];
+                    const distanceSegment = mapService.calculateDistance(currentPathPoint, nextPoint);
+                    totalDistance += distanceSegment;
+                    currentPathPoint = nextPoint; // Move to the next stop for the next segment calculation
+        
+                    // If we've reached the current employee's stop, break
+                    if (stop.id === currentEmployee.id) {
+                        break;
+                    }
+                }
+        
+                // Assume average speed of 25 km/h in city traffic
+                const etaMinutes = (totalDistance / 25) * 60;
+                const etaText = secondsToHms(etaMinutes * 60);
+        
+                if (etaText && etaText !== "Soon") {
+                    document.getElementById('eta').innerHTML = '<small>Reaching in<br></small>' + etaText;
+                    document.getElementById('etaDiv').style.display = 'block';
+                } else {
+                    document.getElementById('eta').innerHTML = '<small>Reaching<br></small>Soon';
+                    document.getElementById('etaDiv').style.display = 'block';
+                }
+        
+            } catch (error) {
+                console.error('ETA calculation error:', error);
             }
-        });
-        // Add aria-label to buttons if missing
-        document.querySelectorAll('button').forEach(function(btn) {
-            if (!btn.hasAttribute('aria-label') && btn.textContent.trim() === '') {
-                btn.setAttribute('aria-label', 'Button');
-            }
-        });
-        // Add aria-label to inputs if missing
-        document.querySelectorAll('input').forEach(function(input) {
-            if (!input.hasAttribute('aria-label') && !input.hasAttribute('placeholder')) {
-                input.setAttribute('aria-label', 'Input field');
-            }
-        });
-    })();
-    </script>
+        }
+        
+                // Interval management
+                document.addEventListener("visibilitychange", () => {
+                    if(document.hidden){
+                        clearInterval(locupdate);
+                        clearInterval(showMapUpdate);
+                    }
+                    else{
+                        if (tripEnded) return;
+                        startRouteDetUpdates();
+                    }
+                });
+        
+                function startRouteDetUpdates() {
+                    if (tripEnded) return;
+                    setTimeout(function() {
+                        calculateEtaAndPlotPath();
+                        locupdate = setInterval(calculateEtaAndPlotPath, routeDetFrequency);
+                        showMapUpdate = setInterval(moveMarker1, 5000);
+                    }, 3000);
+                }
+        
+                // Self no-show functionality
+                function selfNoShowEvent(){
+                    if(myTrackingStatus != '----'){
+                        updateModal(`You cannot mark yourself as No-Show for this trip as you are already marked as ${myTrackingStatus} for this trip.`, 'danger');
+                    }
+                    else{
+                        if(tripType != 'D'){
+                            $.ajax({
+                                type: 'POST',
+                                cache: false,
+                                url: URL_UpdateTrackingSelf,
+                                data: JSON.stringify({
+                                    routeid: routeid,
+                                    empid: empid,
+                                    trackingaction: 'N',
+                                    actionby: '0',
+                                    distance: employeeid
+                                }),
+                                crossDomain: true,
+                                contentType: 'application/json; charset=utf-8',
+                                dataType: 'json'
+                            })
+                            .done(function (data) {
+                                updateModal("You have marked yourself as No-Show.", 'success');
+                            })
+                            .fail(function (e) {
+                                updateModal(`Error: ${e.statusText}`, 'danger');
+                            });
+                        }
+                    }
+                }
+        
+                selfNoShow.addEventListener('click', function(event){
+                    event.preventDefault();
+                    selfNoShowEvent();
+                });
+        
+                // Modal functions
+                function updateModal(message, alertType) {
+                    const modal = document.getElementById('alertModal');
+                    const modalMessage = document.getElementById('modalMessage');
+        
+                    modal.className = 'modal fade';
+        
+                    switch (alertType) {
+                        case 'success':
+                            modal.classList.add('modal-success');
+                            break;
+                        case 'danger':
+                            modal.classList.add('modal-danger');
+                            break;
+                        case 'warning':
+                            modal.classList.add('modal-warning');
+                            break;
+                        case 'info':
+                            modal.classList.add('modal-info');
+                            break;
+                        default:
+                            modal.classList.add('modal-info');
+                            break;
+                    }
+        
+                    modalMessage.textContent = message;
+                    const bootstrapModal = new bootstrap.Modal(modal);
+                    bootstrapModal.show();
+                }
+        
+                function closeModal() {
+                    const modal = document.getElementById('alertModal');
+                    const bootstrapModal = bootstrap.Modal.getInstance(modal);
+                    if (bootstrapModal) {
+                        bootstrapModal.hide();
+                    }
+                }
+        
+                function validateInput(inputElement) {
+                    var emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+        
+                    if (emojiRegex.test(inputElement.value)) {
+                        alert('Emojis are not allowed in the input!');
+                        inputElement.value = inputElement.value.replace(emojiRegex, '');
+                    }
+                }
+        
+                // Chat and Firebase initialization (keeping the original Firebase chat functionality)
+                setTimeout(function () {
+                    // Chat scrollable tabs initialization
+                    const tabs = document.querySelectorAll(".scrollable-tabs-container a");
+                    const rightArrow = document.querySelector(".scrollable-tabs-container .right-arrow svg");
+                    const leftArrow = document.querySelector(".scrollable-tabs-container .left-arrow svg");
+                    const tabsList = document.querySelector(".scrollable-tabs-container ul");
+                    const leftArrowContainer = document.querySelector(".scrollable-tabs-container .left-arrow");
+                    const rightArrowContainer = document.querySelector(".scrollable-tabs-container .right-arrow");
+        
+                    const removeAllActiveClasses = () => {
+                        tabs.forEach((tab) => {
+                            tab.classList.remove("active");
+                        });
+                    };
+        
+                    tabs.forEach((tab) => {
+                        tab.addEventListener("click", () => {
+                            removeAllActiveClasses();
+                            tab.classList.add("active");
+                        });
+                    });
+        
+                    const manageIcons = () => {
+                        if (tabsList.scrollLeft >= 20) {
+                            leftArrowContainer.classList.add("active");
+                        } else {
+                            leftArrowContainer.classList.remove("active");
+                        }
+        
+                        let maxScrollValue = tabsList.scrollWidth - tabsList.clientWidth - 20;
+        
+                        if (tabsList.scrollLeft >= maxScrollValue) {
+                            rightArrowContainer.classList.remove("active");
+                        } else {
+                            rightArrowContainer.classList.add("active");
+                        }
+                    };
+        
+                    rightArrow.addEventListener("click", () => {
+                        tabsList.scrollLeft += 200;
+                        manageIcons();
+                    });
+        
+                    leftArrow.addEventListener("click", () => {
+                        tabsList.scrollLeft -= 200;
+                        manageIcons();
+                    });
+        
+                    tabsList.addEventListener("scroll", manageIcons);
+        
+                    let dragging = false;
+        
+                    const drag = (e) => {
+                        if (!dragging) return;
+                        tabsList.classList.add("dragging");
+                        tabsList.scrollLeft -= e.movementX;
+                    };
+        
+                    tabsList.addEventListener("mousedown", () => {
+                        dragging = true;
+                    });
+        
+                    tabsList.addEventListener("mousemove", drag);
+        
+                    document.addEventListener("mouseup", () => {
+                        dragging = false;
+                        tabsList.classList.remove("dragging");
+                    });
+        
+                    // Load chat messages
+                    var messageElement1 = document.getElementById('chat-messages1');
+                    $.ajax({
+                        url: 'https://www.etmsdrive.in/appControlRest/api/v1/application/chat/22/0',
+                        method: 'GET',
+                        success: OnSuccess,
+                        error: onError
+                    });
+        
+                    function OnSuccess(response) {
+                        const parsedData = JSON.parse(response);
+                        const messageInput = document.getElementById("message-input");
+                        const list = document.querySelector('#chat-messages1');
+                        
+                        for (let i = 0; i < parsedData.length; i++) {
+                            const li = document.createElement('li');
+                            const a = document.createElement('a');
+                            a.href = "#";
+                            a.textContent = parsedData[i].text;
+                            li.addEventListener("click", function () {
+                                const messageText = li.textContent;
+                                if (messageText !== '') {
+                                    messageInput.value = messageText;
+                                }
+                            });
+                            li.appendChild(a);
+                            list.appendChild(li);
+                        }
+                    }
+        
+                    function onError(xhr, status, error) {
+                        console.error('Error loading chat messages:', error);
+                    }
+        
+                    // Firebase Chat Implementation
+                    const firebaseConfig = {
+                        apiKey: "AIzaSyA09UwnVN0gTIHXjZokBBBXCEGyWrZ9rBk",
+                        authDomain: "etmsdrive-89370.firebaseapp.com",
+                        databaseURL: "https://etmsdrive-89370.firebaseio.com/",
+                        projectId: "etmsdrive-89370",
+                        storageBucket: "etmsdrive-89370.appspot.com",
+                        messagingSenderId: "351746301370",
+                        appId: "1:351746301370:android:361973f28e3375bc"
+                    };
+        
+                    let isNewMessage = false;
+                    var _routeId = routeid;
+                    var _driverNo = driver_contact1;
+                    var _empName = emp_contact;
+        
+                    firebase.initializeApp(firebaseConfig);
+                    const database = firebase.database();
+        
+                    if (firebase.messaging.isSupported()) {
+                        const messaging = firebase.messaging();
+        
+                        if ("serviceWorker" in navigator) {
+                            navigator.serviceWorker
+                                .register("/firebase-messaging-sw.js")
+                                .then((registration) => {
+                                    messaging.useServiceWorker(registration);
+                                })
+                                .catch((error) => {
+                                    console.error("Service Worker registration failed:", error);
+                                });
+                        }
+        
+                        messaging.requestPermission()
+                            .then(() => {
+                                return messaging.getToken();
+                            })
+                            .then(token => {
+                            }).catch((error) => {
+                            });
+        
+                        messaging.onMessage(function (message) {
+                        });
+                    }
+        
+                    const messageInput = document.getElementById('message-input');
+                    const sendButton = document.getElementById('send-button');
+                    const chatMessages = document.getElementById('chat-messages');
+        
+                    const routeID = _routeId;
+                    const driverID = _driverNo;
+                    const currentUserID = _empName;
+                    var driverFCMToken;
+        
+                    const messagesRef = database.ref(`chats/trips/${routeID}`);
+        
+                    messagesRef.once("value")
+                        .then(function (snapshot) {
+                            const tripData = snapshot.val();
+                            if (tripData) {
+                                driverFCMToken = tripData.driverFCMToken;
+                                if (driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken.trim() !== '') {
+                                } else {
+                                }
+                            } else {
+                            }
+                        })
+                        .catch(function (error) {
+                            console.error("Error fetching trip data:", error);
+                        });
+        
+                    messageInput.addEventListener('keyup', function (event) {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            sendMessage();
+                        }
+                    });
+        
+                    sendButton.addEventListener('click', () => {
+                        sendMessage();
+                    });
+        
+                    function sendMessage() {
+                        const messageText = messageInput.value.trim();
+                        if (messageText !== '') {
+                            const newMessageRef = database.ref(`chats/trips/${routeID}/messages`).push();
+                            newMessageRef.set({
+                                sender: currentUserID,
+                                receiver: driverID,
+                                content: messageText,
+                                is_read: false,
+                                timestamp: firebase.database.ServerValue.TIMESTAMP
+                            });
+                            
+                            const tokenReference = database.ref(`chats/trips/${routeID}`);
+                            tokenReference.once("value").then(function(snapshot){
+                                const tripData = snapshot.val();
+                                if(tripData){
+                                    driverFCMToken = tripData.driverFCMToken;
+                                    if (driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken.trim() !== '') {
+                                        sendPushNotification(driverFCMToken, messageText);
+                                        messageInput.value = '';
+                                    }
+                                }
+                            });
+                        }
+                    }
+        
+                    database.ref(`chats/trips/${routeID}/messages`).on('child_added', snapshot => {
+                        const message = snapshot.val();
+        
+                        if (message.receiver === currentUserID) {
+                            // Handle incoming message
+                        }
+        
+                        if (message.sender === currentUserID || message.receiver === currentUserID) {
+                            const messageElement = document.createElement('div');
+                            const messageContent = document.createElement('div');
+                            const timestampElement = document.createElement('div');
+                            messageContent.innerText = message.content;
+                            const timestamp = new Date(message.timestamp);
+                            const formattedTime = timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+                            timestampElement.classList.add('timestamp');
+                            timestampElement.innerText = formattedTime;
+        
+                            messageElement.appendChild(messageContent);
+                            messageElement.appendChild(timestampElement);
+        
+                            if (message.sender === currentUserID) {
+                                messageElement.classList.add('chats', 'sender');
+                            } else {
+                                if (isNewMessage) {
+                                    showNotification('New Message', message.content);
+                                }
+                                isNewMessage = true;
+                                messageElement.classList.add('chats', 'recevier');
+                            }
+                            messageElement.classList.add('animate__animated', 'animate__headShake');
+                            chatMessages.appendChild(messageElement);
+                        }
+                    });
+        
+                    function sendPushNotification(recipientFCMToken, message) {
+                        fetch('https://fcm.googleapis.com/fcm/send', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: 'Bearer AAAAUeW2nbo:APA91bFykoDdjXFrBo4qoRh0SvR7twUvPet-onaHvy29OGV7eJR7uMSaw042aEtC0VAEZmlYUd9eeVNfFz4DuifRAiePprBKf2cE7pHIkF1DZdY5fHG7NDqOazTna5rlFkxUlXrOcEpgtSJPL27-l_QGLlmhutR_Hg',
+                            },
+                            body: JSON.stringify({
+                                to: recipientFCMToken,
+                                notification: {
+                                    title: 'New Message',
+                                    body: message,
+                                    click_action: 'your-action-url',
+                                },
+                            }),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                        })
+                        .catch(error => {
+                            console.error('Error sending push notification:', error);
+                        });
+                    }
+        
+                    function showNotification(title, body) {
+                        if (!('Notification' in window)) {
+                            return;
+                        }
+        
+                        if (Notification.permission === 'granted') {
+                            const notification = new Notification(title, { body });
+                        } else if (Notification.permission !== 'denied') {
+                            Notification.requestPermission().then(permission => {
+                                if (permission === 'granted') {
+                                    const notification = new Notification(title, { body });
+                                }
+                            });
+                        }
+                    }
+        
+                }, 3000);        
+        
+            // --- ACCESSIBILITY MANAGER ---
+            // This new approach avoids unreliable screen reader detection and uses the
+            // standard aria-live region, which is the correct way to make announcements.
+            // It will be silent for users not using a screen reader.
+            (function() {
+                const accessibilityManager = {
+                    isInitialized: false,
+        
+                    // Announce a message to screen readers using the aria-live region.
+                    // This is SILENT for users not using assistive technology.
+                    announce(message) {
+                        const liveRegion = document.getElementById('live-region');
+                        if (liveRegion) {
+                            // By setting the text content, screen readers will automatically announce the change.
+                            liveRegion.textContent = message;
+                        }
+                    },
+        
+                    // Sets up all accessibility features.
+                    initialize() {
+                        if (this.isInitialized) {
+                            return;
+                        }
+        
+                        this.setupBasicAriaAndLabels();
+                        this.setupMapAccessibility();
+                        this.setupDriverInfoAccessibility();
+                        this.setupModalAccessibility();
+                        this.setupLiveUpdates();
+                        this.setupChatAccessibility();
+                        this.announcePageInfo(); // Announce initial page state for screen reader users.
+        
+                        this.isInitialized = true;
+                    },
+        
+                    // Basic ARIA and labels that benefit all users.
+                    setupBasicAriaAndLabels() {
+                        // Images
+                        document.querySelectorAll('img').forEach(img => {
+                            if (!img.hasAttribute('alt') || img.getAttribute('alt') === '') {
+                                let altText = 'Image';
+                                if (img.id.includes('Driver')) altText = 'Driver photo';
+                                else if (img.id.includes('Guard')) altText = 'Security guard photo';
+                                else if (img.src.includes('icon')) altText = 'Icon';
+                                img.setAttribute('alt', altText);
+                            }
+                        });
+        
+                        // Buttons
+                        document.querySelectorAll('button').forEach(btn => {
+                            if (!btn.hasAttribute('aria-label')) {
+                                const small = btn.querySelector('small');
+                                const text = small ? small.textContent.trim() : btn.textContent.trim();
+                                if (text) {
+                                    btn.setAttribute('aria-label', text);
+                                } else {
+                                    btn.setAttribute('aria-label', 'Button');
+                                }
+                            }
+                        });
+        
+                        // Inputs
+                        document.querySelectorAll('input').forEach(input => {
+                            if (!input.hasAttribute('aria-label') && input.placeholder) {
+                                input.setAttribute('aria-label', input.placeholder);
+                            }
+                        });
+        
+                        // Landmarks
+                        const driverBox = document.querySelector('.driverBx');
+                        if (driverBox) {
+                            driverBox.setAttribute('role', 'region');
+                            driverBox.setAttribute('aria-label', 'Driver and vehicle information');
+                        }
+                    },
+        
+                    // Makes the map interactive for screen reader and keyboard users.
+                    setupMapAccessibility() {
+                        const mapDiv = document.getElementById('map');
+                        if (mapDiv) {
+                            mapDiv.setAttribute('role', 'application');
+                            mapDiv.setAttribute('aria-label', 'Interactive cab location map. Press Enter or Space to hear current cab location.');
+                            
+                            const announceCabLocation = async () => {
+                                const lat = window.driverlat || window.position?.[0];
+                                const lng = window.driverlng || window.position?.[1];
+                                
+                                if (!lat || !lng) {
+                                    this.announce('Cab location is not available at the moment.');
+                                    return;
+                                }
+        
+                                this.announce('Fetching current cab location...');
+                                
+                                const apiKey = "AIzaSyDKatXVfQNHCj7iNP95PhsOkO9vFmYI-bA"; // Replace with your key if needed
+                                const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+                                
+                                try {
+                                    const response = await fetch(url);
+                                    const data = await response.json();
+                                    const address = (data.status === 'OK' && data.results.length > 0)
+                                        ? data.results[0].formatted_address
+                                        : 'address not found, but the cab is being tracked.';
+                                    this.announce(`Current cab location: ${address}`);
+                                } catch (err) {
+                                    this.announce('Error fetching cab address.');
+                                }
+                            };
+        
+                            mapDiv.addEventListener('keydown', e => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    announceCabLocation();
+                                }
+                            });
+        
+                            mapDiv.addEventListener('click', e => {
+                                // This click might be from a screen reader's double-tap action.
+                                // We announce the location for them.
+                                e.preventDefault();
+                                announceCabLocation();
+                            });
+                        }
+                    },
+        
+                    // Makes driver/guard info accessible.
+                    setupDriverInfoAccessibility() {
+                        const driverImage = document.getElementById('imageDriver');
+                        if (driverImage) {
+                            driverImage.addEventListener('click', () => {
+                                const driverName = document.getElementById('tdName')?.textContent || 'Driver';
+                                const vehicleType = document.getElementById('tdVehicleType')?.textContent || '';
+                                const regNo = document.getElementById('tdRegistrationNo')?.textContent || '';
+                                this.announce(`Driver: ${driverName}. Vehicle: ${vehicleType} ${regNo}`);
+                            });
+                        }
+                    },
+        
+                    // Improves focus management and announcements for modals.
+                    setupModalAccessibility() {
+                        const offcanvasBottom = document.getElementById('offcanvasBottom1');
+                        const callAction = document.getElementById('callAction');
+        
+                        if (offcanvasBottom && callAction) {
+                            offcanvasBottom.addEventListener('shown.bs.offcanvas', () => {
+                                this.announce('Trip options menu opened.');
+                                const firstFocusable = offcanvasBottom.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                                if (firstFocusable) firstFocusable.focus();
+                            });
+        
+                            offcanvasBottom.addEventListener('hidden.bs.offcanvas', () => {
+                                this.announce('Trip options menu closed.');
+                                callAction.focus();
+                            });
+                        }
+                    },
+        
+                    // Sets up observers to announce dynamic content changes.
+                    setupLiveUpdates() {
+                        const observeElement = (elementId, prefix) => {
+                            const element = document.getElementById(elementId);
+                            if (element) {
+                                let lastContent = element.textContent.trim();
+                                const observer = new MutationObserver(() => {
+                                    const newContent = element.textContent.trim();
+                                    if (newContent && newContent !== lastContent) {
+                                        lastContent = newContent;
+                                        this.announce(`${prefix}: ${newContent}`);
+                                    }
+                                });
+                                observer.observe(element, { childList: true, subtree: true });
+                            }
+                        };
+        
+                        observeElement('eta', 'ETA updated');
+                        observeElement('boardingStatus', 'Status updated');
+                    },
+        
+                    // Improves chat accessibility.
+                    setupChatAccessibility() {
+                        const chatBox = document.getElementById('chatBox');
+                        if (chatBox) {
+                            chatBox.addEventListener('shown.bs.offcanvas', () => {
+                                this.announce('Chat opened.');
+                            });
+                        }
+                    },
+        
+                    // Announce the initial, most important info on page load.
+                    announcePageInfo() {
+                        setTimeout(() => {
+                            const driverName = document.getElementById('tdName')?.textContent;
+                            const regNo = document.getElementById('tdRegistrationNo')?.textContent;
+                            const otp = document.getElementById('Otp')?.textContent;
+                            const status = document.getElementById('boardingStatus')?.textContent;
+                            
+                            let message = 'Cab tracking page loaded. ';
+                            if (driverName) message += `Driver is ${driverName}. `;
+                            if (regNo) message += `Vehicle number is ${regNo}. `;
+                            if (otp) message += `${otp}. `;
+                            if (status) message += `Your status is ${status}. `;
+                            
+                            this.announce(message);
+                        }, 2500); // Delay to allow page to settle.
+                    }
+                };
+        
+                // Initialize the accessibility manager when the DOM is ready.
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => accessibilityManager.initialize());
+                } else {
+                    accessibilityManager.initialize();
+                }
+        
+            })();
+            </script>
 </body>
 </html>
