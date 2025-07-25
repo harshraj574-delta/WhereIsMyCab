@@ -1744,6 +1744,24 @@ html, body {
             }
         
             async updateEmployeeETAs(driverLat, driverLng, employees) {
+                // const durations = await this.fetchLiveETAs(driverLat, driverLng, employees, "delhi");
+                // durations.forEach((seconds, index) => {
+                //     const etaMins = Math.round(seconds / 60);
+                //     const emp = employees[index];
+                //     if (emp.marker) {
+                //         emp.marker.setPopupContent(`
+                //             <div>
+                //                 <strong>${emp.empName || 'Employee'}</strong><br>
+                //                 Stop: ${emp.stopNo}<br>
+                //                 Status: ${emp.trackingStatus}<br>
+                //                 ETA: ${etaMins} mins
+                //             </div>
+                //         `);
+                //     }
+                // });
+        
+                // ✏ Also update list in UI
+                // this.updateEtaListUI(employees, durations);
             }
         
             centerMap(lat, lng, zoom = 14) {
@@ -2043,6 +2061,7 @@ html, body {
                             }  
                         }
                         else {
+                            // console.log('cab no show cancelled');
                         }
                     }
                     else {
@@ -2120,13 +2139,13 @@ html, body {
                     if (isMobile.any()) {
                         var url;
                         if (gender == 'M') {
-                            url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view his trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                            url = ((empname != null && empname != undefined && empname != "") ? empname : "user") + " wants you to view his trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
                         }
                         else if (gender == 'F') {
-                            url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view her trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                            url = ((empname != null && empname != undefined && empname != "") ? empname : "user") + " wants you to view her trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
                         }
                         else {
-                            url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view their trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                            url = ((empname != null && empname != undefined && empname != "") ? empname : "user") + " wants you to view their trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
                         }
                         var message = encodeURIComponent(url);
                         var whatsapp_url = "whatsapp://send?text=" + message;
@@ -2156,13 +2175,13 @@ html, body {
                     var url;
         
                     if (gender == 'M') {
-                        url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view his trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                        url = ((empname != null && empname != undefined && empname != "") ? empname : "user") + " wants you to view his trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
                     }
                     else if (gender == 'F') {
-                        url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view her trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                        url = ((empname != null && empname != undefined && empname != "") ? empname : "user") + " wants you to view her trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
                     }
                     else {
-                        url = (empname != null && empname != undefined && empname != "") ? empname : "user" + " wants you to view their trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
+                        url = ((empname != null && empname != undefined && empname != "") ? empname : "user") + " wants you to view their trip details. Kindly click on the link below : \n" + myUrl + "&s=s";
                     }
         
                     var message = encodeURIComponent(url);
@@ -2285,6 +2304,7 @@ html, body {
                         carouselExampleIndicators.setAttribute('data-bs-touch', "false");
                     }
                     else {
+                        // console.log('guard');
                     }
         
                     driverName = data.driverName;
@@ -2399,6 +2419,7 @@ html, body {
                         return; // Exit early, don't process further
                     }
                     else{
+                        // console.log('::::::::::>' + data.trackingStatus);
                     }
         
                     if(data.id == empid){
@@ -3034,10 +3055,13 @@ html, body {
                                 return messaging.getToken();
                             })
                             .then(token => {
+                                // console.log('FCM Token:', token);
                             }).catch((error) => {
+                                // console.log('Error requesting permission:', error);
                             });
         
                         messaging.onMessage(function (message) {
+                            // console.log("onMessage event fired", message);
                         });
                     }
         
@@ -3058,9 +3082,12 @@ html, body {
                             if (tripData) {
                                 driverFCMToken = tripData.driverFCMToken;
                                 if (driverFCMToken && typeof driverFCMToken === 'string' && driverFCMToken.trim() !== '') {
+                                    // console.log("Driver's FCM Token:", driverFCMToken);
                                 } else {
+                                    // console.log("Driver's FCM Token is not available or invalid.");
                                 }
                             } else {
+                                // console.log("Trip data not found.");
                             }
                         })
                         .catch(function (error) {
@@ -3156,6 +3183,7 @@ html, body {
                         })
                         .then(response => response.json())
                         .then(data => {
+                            // console.log('Push notification sent:', data);
                         })
                         .catch(error => {
                             console.error('Error sending push notification:', error);
@@ -3180,221 +3208,465 @@ html, body {
         
                 }, 3000);        
         
-            // --- ACCESSIBILITY MANAGER ---
-            // This new approach avoids unreliable screen reader detection and uses the
-            // standard aria-live region, which is the correct way to make announcements.
-            // It will be silent for users not using a screen reader.
+            // Screen Reader Detection and Accessibility Features
             (function() {
-                const accessibilityManager = {
-                    isInitialized: false,
-        
-                    // Announce a message to screen readers using the aria-live region.
-                    // This is SILENT for users not using assistive technology.
-                    announce(message) {
-                        const liveRegion = document.getElementById('live-region');
-                        if (liveRegion) {
-                            // By setting the text content, screen readers will automatically announce the change.
-                            liveRegion.textContent = message;
+                // Global variable to track if screen reader is active
+                let isScreenReaderActive = false;
+                
+                // Function to detect screen reader
+                function detectScreenReader() {
+                    // Method 1: Check for common screen reader indicators
+                    const userAgent = navigator.userAgent.toLowerCase();
+                    const isAndroidTalkBack = userAgent.includes('android') && (
+                        userAgent.includes('talkback') || 
+                        userAgent.includes('accessibility') ||
+                        document.querySelector('[aria-live]') !== null
+                    );
+                    
+                    const isIOSVoiceOver = userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('ipod');
+                    
+                    // Method 2: Check for accessibility features
+                    const hasAccessibilityFeatures = (
+                        'speechSynthesis' in window ||
+                        navigator.maxTouchPoints > 0 ||
+                        window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+                        window.matchMedia('(inverted-colors: inverted)').matches ||
+                        window.matchMedia('(forced-colors: active)').matches
+                    );
+                    
+                    // Method 3: Check for screen reader specific DOM events
+                    let screenReaderEvents = false;
+                    const testElement = document.createElement('div');
+                    testElement.setAttribute('aria-live', 'polite');
+                    testElement.style.position = 'absolute';
+                    testElement.style.left = '-9999px';
+                    document.body.appendChild(testElement);
+                    
+                    // Test if aria-live regions are being monitored
+                    testElement.textContent = 'test';
+                    setTimeout(() => {
+                        if (testElement.textContent === 'test') {
+                            // Additional checks for screen reader activity
+                            screenReaderEvents = document.querySelectorAll('[aria-live]').length > 1;
                         }
-                    },
+                        document.body.removeChild(testElement);
+                    }, 100);
+                    
+                    // Method 4: Check for focus management (common in screen readers)
+                    let focusActivity = false;
+                    const focusHandler = () => {
+                        focusActivity = true;
+                        document.removeEventListener('focus', focusHandler, true);
+                    };
+                    document.addEventListener('focus', focusHandler, true);
+                    
+                    // Method 5: Check for keyboard navigation patterns
+                    let keyboardNavigation = false;
+                    const keyHandler = (e) => {
+                        if (e.key === 'Tab' || e.key === 'ArrowUp' || e.key === 'ArrowDown' || 
+                            e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+                            keyboardNavigation = true;
+                        }
+                    };
+                    document.addEventListener('keydown', keyHandler);
+                    
+                    // Final determination
+                    setTimeout(() => {
+                        isScreenReaderActive = (
+                            isAndroidTalkBack || 
+                            (isIOSVoiceOver && hasAccessibilityFeatures) || 
+                            screenReaderEvents || 
+                            focusActivity || 
+                            keyboardNavigation ||
+                            // Check if user is navigating with keyboard extensively
+                            document.activeElement !== document.body
+                        );
+                        
+                        // Additional runtime detection
+                        if (!isScreenReaderActive) {
+                            // Check if user is using high contrast mode
+                            const highContrast = window.matchMedia('(forced-colors: active)').matches;
+                            // Check if user has reduced motion preference
+                            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                            // Check if user has inverted colors
+                            const invertedColors = window.matchMedia('(inverted-colors: inverted)').matches;
+                            
+                            isScreenReaderActive = highContrast || reducedMotion || invertedColors;
+                        }
+                        
+                        console.log('Screen reader detection:', isScreenReaderActive);
+                        
+                        // Initialize accessibility features if screen reader is detected
+                        if (isScreenReaderActive) {
+                            initializeAccessibilityFeatures();
+                        }
+                        
+                        document.removeEventListener('keydown', keyHandler);
+                    }, 2000);
+                }
+                
+                // Enhanced announce function that only works when screen reader is active
+                function announce(message) {
+                    if (!isScreenReaderActive) return; // Only announce for screen reader users
+                    
+                    const liveRegion = document.getElementById('live-region');
+                    if (liveRegion) {
+                        liveRegion.textContent = message;
+                    }
+                    
+                    // Use speech synthesis only for screen reader users
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel(); // Cancel any ongoing speech
+                        const utter = new SpeechSynthesisUtterance(message);
+                        utter.rate = 0.9;
+                        utter.pitch = 1;
+                        utter.volume = 1;
+                        window.speechSynthesis.speak(utter);
+                    }
+                }
+                
+                // Initialize accessibility features only when screen reader is detected
+                function initializeAccessibilityFeatures() {
+                    // Enhanced Map Accessibility
+                    const mapDiv = document.getElementById('map');
+                    if (mapDiv) {
+                        mapDiv.setAttribute('role', 'application');
+                        mapDiv.setAttribute('aria-label', 'Interactive cab location map. Press Enter or Space to hear current cab location.');
+                        mapDiv.setAttribute('tabindex', '0');
+                        
+                        mapDiv.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                announceCabLocation();
+                            }
+                        });
+                        
+                        mapDiv.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            announceCabLocation();
+                        });
+                    }
         
-                    // Sets up all accessibility features.
-                    initialize() {
-                        if (this.isInitialized) {
+                    async function announceCabLocation() {
+                        const lat = window.driverlat || window.position?.[0];
+                        const lng = window.driverlng || window.position?.[1];
+                        
+                        if (!lat || !lng) {
+                            announce('Cab location is not available at the moment. Please wait for GPS signal.');
                             return;
                         }
         
-                        this.setupBasicAriaAndLabels();
-                        this.setupMapAccessibility();
-                        this.setupDriverInfoAccessibility();
-                        this.setupModalAccessibility();
-                        this.setupLiveUpdates();
-                        this.setupChatAccessibility();
-                        this.announcePageInfo(); // Announce initial page state for screen reader users.
-        
-                        this.isInitialized = true;
-                    },
-        
-                    // Basic ARIA and labels that benefit all users.
-                    setupBasicAriaAndLabels() {
-                        // Images
-                        document.querySelectorAll('img').forEach(img => {
-                            if (!img.hasAttribute('alt') || img.getAttribute('alt') === '') {
-                                let altText = 'Image';
-                                if (img.id.includes('Driver')) altText = 'Driver photo';
-                                else if (img.id.includes('Guard')) altText = 'Security guard photo';
-                                else if (img.src.includes('icon')) altText = 'Icon';
-                                img.setAttribute('alt', altText);
-                            }
-                        });
-        
-                        // Buttons
-                        document.querySelectorAll('button').forEach(btn => {
-                            if (!btn.hasAttribute('aria-label')) {
-                                const small = btn.querySelector('small');
-                                const text = small ? small.textContent.trim() : btn.textContent.trim();
-                                if (text) {
-                                    btn.setAttribute('aria-label', text);
-                                } else {
-                                    btn.setAttribute('aria-label', 'Button');
-                                }
-                            }
-                        });
-        
-                        // Inputs
-                        document.querySelectorAll('input').forEach(input => {
-                            if (!input.hasAttribute('aria-label') && input.placeholder) {
-                                input.setAttribute('aria-label', input.placeholder);
-                            }
-                        });
-        
-                        // Landmarks
-                        const driverBox = document.querySelector('.driverBx');
-                        if (driverBox) {
-                            driverBox.setAttribute('role', 'region');
-                            driverBox.setAttribute('aria-label', 'Driver and vehicle information');
-                        }
-                    },
-        
-                    // Makes the map interactive for screen reader and keyboard users.
-                    setupMapAccessibility() {
-                        const mapDiv = document.getElementById('map');
-                        if (mapDiv) {
-                            mapDiv.setAttribute('role', 'application');
-                            mapDiv.setAttribute('aria-label', 'Interactive cab location map. Press Enter or Space to hear current cab location.');
+                        announce('Fetching current cab location...');
+                        
+                        const apiKey = "AIzaSyDKatXVfQNHCj7iNP95PhsOkO9vFmYI-bA";
+                        const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+                        
+                        try {
+                            const response = await fetch(url);
+                            const data = await response.json();
                             
-                            const announceCabLocation = async () => {
-                                const lat = window.driverlat || window.position?.[0];
-                                const lng = window.driverlng || window.position?.[1];
-                                
-                                if (!lat || !lng) {
-                                    this.announce('Cab location is not available at the moment.');
-                                    return;
-                                }
-        
-                                this.announce('Fetching current cab location...');
-                                
-                                const apiKey = "AIzaSyDKatXVfQNHCj7iNP95PhsOkO9vFmYI-bA"; // Replace with your key if needed
-                                const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
-                                
-                                try {
-                                    const response = await fetch(url);
-                                    const data = await response.json();
-                                    const address = (data.status === 'OK' && data.results.length > 0)
-                                        ? data.results[0].formatted_address
-                                        : 'address not found, but the cab is being tracked.';
-                                    this.announce(`Current cab location: ${address}`);
-                                } catch (err) {
-                                    this.announce('Error fetching cab address.');
-                                }
-                            };
-        
-                            mapDiv.addEventListener('keydown', e => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    announceCabLocation();
-                                }
-                            });
-        
-                            mapDiv.addEventListener('click', e => {
-                                // This click might be from a screen reader's double-tap action.
-                                // We announce the location for them.
-                                e.preventDefault();
-                                announceCabLocation();
-                            });
+                            if (data.status === 'OK' && data.results.length > 0) {
+                                const address = data.results[0].formatted_address;
+                                const message = `Current cab location: ${address}`;
+                                announce(message);
+                            } else {
+                                announce('Unable to retrieve the current cab address. The cab is being tracked.');
+                            }
+                        } catch (err) {
+                            announce('Error fetching cab address. The cab location is being tracked on the map.');
                         }
-                    },
+                    }
         
-                    // Makes driver/guard info accessible.
-                    setupDriverInfoAccessibility() {
+                    // Driver Information Accessibility
+                    function setupDriverInfoAccessibility() {
                         const driverImage = document.getElementById('imageDriver');
+                        const driverImage1 = document.getElementById('imageDriver1');
+                        
                         if (driverImage) {
-                            driverImage.addEventListener('click', () => {
+                            driverImage.setAttribute('role', 'img');
+                            driverImage.addEventListener('click', function() {
                                 const driverName = document.getElementById('tdName')?.textContent || 'Driver';
                                 const vehicleType = document.getElementById('tdVehicleType')?.textContent || '';
                                 const regNo = document.getElementById('tdRegistrationNo')?.textContent || '';
-                                this.announce(`Driver: ${driverName}. Vehicle: ${vehicleType} ${regNo}`);
+                                const message = `Driver: ${driverName}. Vehicle: ${vehicleType} ${regNo}`;
+                                announce(message);
                             });
                         }
-                    },
-        
-                    // Improves focus management and announcements for modals.
-                    setupModalAccessibility() {
-                        const offcanvasBottom = document.getElementById('offcanvasBottom1');
-                        const callAction = document.getElementById('callAction');
-        
-                        if (offcanvasBottom && callAction) {
-                            offcanvasBottom.addEventListener('shown.bs.offcanvas', () => {
-                                this.announce('Trip options menu opened.');
-                                const firstFocusable = offcanvasBottom.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-                                if (firstFocusable) firstFocusable.focus();
-                            });
-        
-                            offcanvasBottom.addEventListener('hidden.bs.offcanvas', () => {
-                                this.announce('Trip options menu closed.');
-                                callAction.focus();
+                        
+                        if (driverImage1) {
+                            driverImage1.setAttribute('role', 'img');
+                            driverImage1.addEventListener('click', function() {
+                                const driverName = document.getElementById('tdName1')?.textContent || 'Driver';
+                                const message = `Driver: ${driverName}`;
+                                announce(message);
                             });
                         }
-                    },
         
-                    // Sets up observers to announce dynamic content changes.
-                    setupLiveUpdates() {
-                        const observeElement = (elementId, prefix) => {
-                            const element = document.getElementById(elementId);
-                            if (element) {
-                                let lastContent = element.textContent.trim();
-                                const observer = new MutationObserver(() => {
-                                    const newContent = element.textContent.trim();
-                                    if (newContent && newContent !== lastContent) {
-                                        lastContent = newContent;
-                                        this.announce(`${prefix}: ${newContent}`);
-                                    }
-                                });
-                                observer.observe(element, { childList: true, subtree: true });
-                            }
-                        };
-        
-                        observeElement('eta', 'ETA updated');
-                        observeElement('boardingStatus', 'Status updated');
-                    },
-        
-                    // Improves chat accessibility.
-                    setupChatAccessibility() {
-                        const chatBox = document.getElementById('chatBox');
-                        if (chatBox) {
-                            chatBox.addEventListener('shown.bs.offcanvas', () => {
-                                this.announce('Chat opened.');
+                        const guardImage = document.getElementById('imageGuard');
+                        if (guardImage) {
+                            guardImage.setAttribute('role', 'img');
+                            guardImage.addEventListener('click', function() {
+                                const guardName = document.getElementById('guardName')?.textContent || 'Guard';
+                                const message = `Security Guard: ${guardName}`;
+                                announce(message);
                             });
                         }
-                    },
+                    }
         
-                    // Announce the initial, most important info on page load.
-                    announcePageInfo() {
+                    // Auto-announce important information when page loads
+                    function announcePageInfo() {
                         setTimeout(() => {
                             const driverName = document.getElementById('tdName')?.textContent;
+                            const vehicleType = document.getElementById('tdVehicleType')?.textContent;
                             const regNo = document.getElementById('tdRegistrationNo')?.textContent;
                             const otp = document.getElementById('Otp')?.textContent;
                             const status = document.getElementById('boardingStatus')?.textContent;
                             
                             let message = 'Cab tracking page loaded. ';
-                            if (driverName) message += `Driver is ${driverName}. `;
-                            if (regNo) message += `Vehicle number is ${regNo}. `;
-                            if (otp) message += `${otp}. `;
-                            if (status) message += `Your status is ${status}. `;
                             
-                            this.announce(message);
-                        }, 2500); // Delay to allow page to settle.
+                            if (driverName) {
+                                message += `Driver: ${driverName}. `;
+                            }
+                            
+                            if (vehicleType && regNo) {
+                                message += `Vehicle: ${vehicleType} ${regNo}. `;
+                            }
+                            
+                            if (otp) {
+                                message += `${otp}. `;
+                            }
+                            
+                            if (status) {
+                                message += `Status: ${status}. `;
+                            }
+                            
+                            message += 'Click on the map to hear cab location. Press Tab to navigate options.';
+                            
+                            announce(message);
+                        }, 2000);
                     }
-                };
         
-                // Initialize the accessibility manager when the DOM is ready.
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', () => accessibilityManager.initialize());
-                } else {
-                    accessibilityManager.initialize();
+                    // Modal/Offcanvas Accessibility
+                    function setupModalAccessibility() {
+                        const offcanvasBottom = document.getElementById('offcanvasBottom1');
+                        const callAction = document.getElementById('callAction');
+                        
+                        if (offcanvasBottom) {
+                            offcanvasBottom.setAttribute('aria-label', 'Trip options menu');
+                            
+                            offcanvasBottom.addEventListener('keydown', function(e) {
+                                if (e.key === 'Escape') {
+                                    const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasBottom);
+                                    if (bsOffcanvas) {
+                                        bsOffcanvas.hide();
+                                    }
+                                }
+                            });
+                            
+                            offcanvasBottom.addEventListener('shown.bs.offcanvas', function() {
+                                const firstFocusable = offcanvasBottom.querySelector('button, [tabindex]:not([tabindex="-1"])');
+                                if (firstFocusable) {
+                                    firstFocusable.focus();
+                                }
+                                announce('Trip options menu opened. Use Tab to navigate options, Escape to close.');
+                            });
+                            
+                            offcanvasBottom.addEventListener('hidden.bs.offcanvas', function() {
+                                if (callAction) {
+                                    callAction.focus();
+                                }
+                                announce('Trip options menu closed.');
+                            });
+                        }
+                        
+                        if (callAction) {
+                            callAction.setAttribute('role', 'button');
+                            callAction.setAttribute('aria-label', 'Open trip options menu');
+                            callAction.setAttribute('tabindex', '0');
+                            
+                            callAction.addEventListener('keydown', function(e) {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    callAction.click();
+                                }
+                            });
+                        }
+                        
+                        const actionButtons = document.querySelectorAll('.tap_action button');
+                        actionButtons.forEach(button => {
+                            const small = button.querySelector('small');
+                            if (small) {
+                                const actionName = small.textContent.trim();
+                                button.setAttribute('aria-label', actionName);
+                                
+                                button.addEventListener('click', function() {
+                                    announce(`${actionName} activated`);
+                                });
+                            }
+                        });
+                    }
+        
+                    // Live Region Updates
+                    function setupLiveUpdates() {
+                        const etaElement = document.getElementById('eta');
+                        if (etaElement) {
+                            let lastETA = '';
+                            const etaObserver = new MutationObserver(function(mutations) {
+                                mutations.forEach(function(mutation) {
+                                    if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                                        const currentETA = etaElement.textContent.trim();
+                                        if (currentETA !== lastETA && currentETA) {
+                                            lastETA = currentETA;
+                                            announce(`ETA updated: ${currentETA}`);
+                                        }
+                                    }
+                                });
+                            });
+                            
+                            etaObserver.observe(etaElement, {
+                                childList: true,
+                                subtree: true,
+                                characterData: true
+                            });
+                        }
+        
+                        const statusElement = document.getElementById('boardingStatus');
+                        if (statusElement) {
+                            let lastStatus = '';
+                            const statusObserver = new MutationObserver(function(mutations) {
+                                mutations.forEach(function(mutation) {
+                                    if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                                        const currentStatus = statusElement.textContent.trim();
+                                        if (currentStatus !== lastStatus && currentStatus) {
+                                            lastStatus = currentStatus;
+                                            announce(`Status updated: ${currentStatus}`);
+                                        }
+                                    }
+                                });
+                            });
+                            
+                            statusObserver.observe(statusElement, {
+                                childList: true,
+                                subtree: true,
+                                characterData: true
+                            });
+                        }
+                    }
+        
+                    // Chat Accessibility
+                    function setupChatAccessibility() {
+                        const chatBox = document.getElementById('chatBox');
+                        const messageInput = document.getElementById('message-input');
+                        const sendButton = document.getElementById('send-button');
+                        
+                        if (chatBox) {
+                            chatBox.setAttribute('aria-label', 'Chat with driver');
+                            
+                            chatBox.addEventListener('shown.bs.offcanvas', function() {
+                                announce('Chat opened. Type your message and press Enter or click send.');
+                            });
+                        }
+                        
+                        if (messageInput) {
+                            messageInput.setAttribute('aria-label', 'Type your message to the driver');
+                            
+                            messageInput.addEventListener('keyup', function(e) {
+                                if (e.key === 'Enter' && this.value.trim()) {
+                                    announce('Message sent');
+                                }
+                            });
+                        }
+                        
+                        if (sendButton) {
+                            sendButton.setAttribute('aria-label', 'Send message');
+                            
+                            sendButton.addEventListener('click', function() {
+                                announce('Message sent');
+                            });
+                        }
+                    }
+        
+                    // Initialize all accessibility features
+                    setupDriverInfoAccessibility();
+                    announcePageInfo();
+                    setupModalAccessibility();
+                    setupLiveUpdates();
+                    setupChatAccessibility();
                 }
         
+                // Enhanced Alt Text and ARIA Labels (always applied)
+                function setupBasicAccessibility() {
+                    document.querySelectorAll('img').forEach(function(img) {
+                        const id = img.id;
+                        let altText = '';
+                        
+                        switch(id) {
+                            case 'imageDriver':
+                            case 'imageDriver1':
+                                altText = 'Driver photo';
+                                break;
+                            case 'imageGuard':
+                                altText = 'Security guard photo';
+                                break;
+                            default:
+                                if (!img.hasAttribute('alt') || img.getAttribute('alt') === '') {
+                                    altText = img.src.includes('icon') ? 'Icon' : 'Image';
+                                }
+                        }
+                        
+                        if (altText) {
+                            img.setAttribute('alt', altText);
+                        }
+                    });
+                    
+                    document.querySelectorAll('button').forEach(function(btn) {
+                        if (!btn.hasAttribute('aria-label')) {
+                            const text = btn.textContent.trim();
+                            const small = btn.querySelector('small');
+                            
+                            if (small) {
+                                btn.setAttribute('aria-label', small.textContent.trim());
+                            } else if (text) {
+                                btn.setAttribute('aria-label', text);
+                            } else {
+                                btn.setAttribute('aria-label', 'Button');
+                            }
+                        }
+                    });
+                    
+                    document.querySelectorAll('input').forEach(function(input) {
+                        if (!input.hasAttribute('aria-label') && !input.hasAttribute('placeholder')) {
+                            const id = input.id;
+                            if (id === 'message-input') {
+                                input.setAttribute('aria-label', 'Type your message to the driver');
+                            } else {
+                                input.setAttribute('aria-label', 'Input field');
+                            }
+                        }
+                    });
+                    
+                    const driverBox = document.querySelector('.driverBx');
+                    if (driverBox) {
+                        driverBox.setAttribute('role', 'region');
+                        driverBox.setAttribute('aria-label', 'Driver and vehicle information');
+                    }
+                }
+        
+                // Export announce function for global use (only works when screen reader is active)
+                window.announce = announce;
+        
+                // Initialize detection and basic accessibility
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        setupBasicAccessibility();
+                        detectScreenReader();
+                    });
+                } else {
+                    setupBasicAccessibility();
+                    detectScreenReader();
+                }
             })();
+        
             </script>
 </body>
 </html>
